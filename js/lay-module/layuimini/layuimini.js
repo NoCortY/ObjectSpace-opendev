@@ -45,15 +45,24 @@ layui.define(["element", "jquery"], function (exports) {
             var loading = layer.load(0, {shade: false, time: 2 * 1000});
             layuimini.initBgColor();
             layuimini.initDevice();
+            $.ajax({
+                url:url,
+                type:'get',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success:function(data){
+                    layuimini.initMenu(data.data);
+                }
+            });
             $.getJSON(url, function (data, status) {
                 if (data == null) {
                     layuimini.msg_error('暂无菜单信息');
                 } else {
-                    layuimini.initHome(data.homeInfo);
-                    layuimini.initLogo(data.logoInfo);
-                    layuimini.initClear(data.clearInfo);
-                    layuimini.initMenu(data.menuInfo);
-                    layuimini.initTab();
+                    //layuimini.initHome(data.homeInfo);
+                    //layuimini.initLogo(data.logoInfo);
+                    //layuimini.initClear(data.clearInfo);
+                    //layuimini.initTab();
                 }
             }).fail(function () {
                 layuimini.msg_error('菜单接口有误');
