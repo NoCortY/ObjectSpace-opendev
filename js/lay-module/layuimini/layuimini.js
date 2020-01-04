@@ -41,10 +41,8 @@ layui.define(["element", "jquery"], function (exports) {
          * 初始化
          * @param url
          */
-        this.init = function (url) {
+        this.initMenuInfo = function (url) {
             var loading = layer.load(0, {shade: false, time: 2 * 1000});
-            layuimini.initBgColor();
-            layuimini.initDevice();
             $.ajax({
                 url:url,
                 type:'get',
@@ -52,7 +50,7 @@ layui.define(["element", "jquery"], function (exports) {
                     withCredentials: true
                 },
                 success:function(data){
-                    layuimini.initMenu(data.data);
+                    layuimini.initMenu(data.data.menuInfo);
                 }
             });
             $.getJSON(url, function (data, status) {
@@ -69,7 +67,20 @@ layui.define(["element", "jquery"], function (exports) {
             });
             layer.close(loading);
         };
-
+        this.initStatic = function(url){
+            layuimini.initBgColor();
+            layuimini.initDevice();
+            $.ajax({
+                url:url,
+                type:'get',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success:function(data){
+                    layuimini.initHome(data.data.homeInfo);
+                }
+            });
+        }
         /**
          * 初始化设备端
          */

@@ -111,8 +111,10 @@
             element = layui.element,
             layer = layui.layer;
 
-        layuimini.init('http://127.0.0.1:7000/ObjectCloud/AuthCenter/menu/listMenu?page=framework.html');
-
+        //初始化菜单
+        layuimini.initMenuInfo('http://127.0.0.1:7000/ObjectCloud/AuthCenter/menu/initMenu?page=framework.html');
+        //初始化页面其他资源
+        layuimini.initStatic('http://127.0.0.1:7000/ObjectCloud/AuthCenter/menu/initStatic?page=framework.html');
         $('.login-out').on("click", function () {
             layer.msg('退出登录成功', function () {
                 window.location = '/page/login-1.html';
