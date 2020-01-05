@@ -53,7 +53,7 @@ layui.define(["element", "jquery"], function (exports) {
                     layuimini.initMenu(data.data.menuInfo);
                 }
             });
-            $.getJSON(url, function (data, status) {
+            /*$.getJSON(url, function (data, status) {
                 if (data == null) {
                     layuimini.msg_error('暂无菜单信息');
                 } else {
@@ -64,7 +64,7 @@ layui.define(["element", "jquery"], function (exports) {
                 }
             }).fail(function () {
                 layuimini.msg_error('菜单接口有误');
-            });
+            });*/
             layer.close(loading);
         };
         this.initStatic = function(url){
@@ -78,6 +78,7 @@ layui.define(["element", "jquery"], function (exports) {
                 },
                 success:function(data){
                     layuimini.initHome(data.data.homeInfo);
+                    layuimini.initLogo(data.data.logoInfo);
                 }
             });
         }

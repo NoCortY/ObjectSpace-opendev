@@ -96,7 +96,7 @@
                                                         <h5>接口调用统计</h5>
                                                     </div>
                                                     <div class="panel-content">
-                                                        <h1 class="no-margins">1234</h1>
+                                                        <h1 class="no-margins" id="callCount">-1</h1>
                                                         <small>平台接口调用次数</small>
                                                     </div>
                                                 </div>
@@ -460,6 +460,17 @@
                 },
                 success:function(data){
                     $("#userCount").html(data.data);
+                }
+            });
+            $.ajax({
+                //获取接口调用次数
+                url:ZUUL_URL+'/LogCenter/LC/logCount',
+                type:'get',
+                xhrFields:{
+                    withCredentials:true
+                },
+                success:function(data){
+                    $("#callCount").html(data.data)
                 }
             });
         }
