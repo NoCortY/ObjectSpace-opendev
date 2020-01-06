@@ -135,15 +135,8 @@
 
                 <div class="layui-card">
                     <div class="layui-card-header"><i class="fa fa-bullhorn icon icon-tip"></i>系统公告</div>
-                    <div class="layui-card-body layui-text">
-                        <div class="layuimini-notice">
-                            <div class="layuimini-notice-title">修复已知bug</div>
-                            <div class="layuimini-notice-extra">2020-01-06 17:22</div>
-                            <div class="layuimini-notice-content layui-hide">
-                                修复了第二次访问微服务404的bug。<br>
-                                开始正式写各项功能。<br>
-                            </div>
-                        </div>
+                    <div class="layui-card-body layui-text" id="notice">
+
                     </div>
                 </div>
 
@@ -372,7 +365,25 @@
                 error:function (e) {
                     layuimini.msg_error('网络错误');
                 }
-            })
+            });
+            $.ajax({
+                //获取notice
+                url:ZUUL_URL+"/LogCenter/Logistics/notice",
+                type:'get',
+                xhrFields:{
+                    withCredentials:true
+                },
+                success:function(data){
+                    var htmlStr = "";
+                    $.each(data.data,function(index,notice){
+                        htmlStr="<div class='layuimini-notice'>" +
+                            "                            <div class='layuimini-notice-title'>"+notice.title+"</div>" +
+                            "                            <div class='layuimini-notice-extra'>"+notice.createTime+"</div>" +
+                            "                            <div class='layuimini-notice-content layui-hide'>" +notice.content+"</div></div>"
+                    });
+                    $("#notice").html(htmlStr);
+                }
+            });
         }
     });
 </script>
