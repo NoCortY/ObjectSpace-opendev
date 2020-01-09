@@ -253,6 +253,23 @@
          * 报表功能
          */
         var echartsRecords = echarts.init(document.getElementById('echarts-records'), 'walden');
+        $.ajax({
+            url:ZUUL_URL+"/LogCenter/LC/callCount",
+            type:'get',
+            xhrFields: {
+                withCredentials: true
+            },
+            success:function(data){
+                if(data.code==="1001"){
+
+                }else{
+                    layuimini.msg_error('请求接口调用趋势图失败');
+                }
+            },
+            error:function (e) {
+                layuimini.msg_error('网络错误');
+            }
+        });
         var optionRecords = {
             tooltip: {
                 trigger: 'axis'
