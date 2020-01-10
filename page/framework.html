@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>ObjectSpace-云组件开放平台</title>
+    <!-- HTTPS -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
@@ -112,9 +114,9 @@
             layer = layui.layer;
 
         //初始化菜单
-        layuimini.initMenuInfo('http://127.0.0.1:7000/ObjectCloud/AuthCenter/menu/initMenu?page=framework.html');
+        layuimini.initMenuInfo('http://cloud.objectspace.cn/ObjectCloud/AuthCenter/menu/initMenu?page=framework.html');
         //初始化页面其他资源
-        layuimini.initStatic('http://127.0.0.1:7000/ObjectCloud/AuthCenter/menu/initStatic?page=framework.html');
+        layuimini.initStatic('http://cloud.objectspace.cn/ObjectCloud/AuthCenter/menu/initStatic?page=framework.html');
         $('.login-out').on("click", function () {
             layer.msg('退出登录成功', function () {
                 window.location = '/page/login-1.html';

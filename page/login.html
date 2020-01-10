@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>ObjectSpace云组件开放平台</title>
+    <!-- HTTPS -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -138,7 +140,7 @@
                 <input type="text" lay-verify="required|captcha" placeholder="图形验证码" autocomplete="off"
                        class="layui-input verification captcha" id="captcha">
                 <div class="captcha-img">
-                    <img id="captchaPic" src="http://127.0.0.1:7000/ObjectCloud/AuthCenter/captcha/kaptcha.jpg" onclick="changeCaptcha(this)">
+                    <img id="captchaPic" src="https://cloud.objectspace.cn/ObjectCloud/AuthCenter/captcha/kaptcha.jpg" onclick="changeCaptcha(this)">
                 </div>
             </div>
             <div class="layui-form-item">
