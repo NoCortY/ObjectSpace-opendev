@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>网站简介</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+</head>
+<style>
+    .layui-top-box {padding:40px 20px 20px 20px;color:#fff}
+    .panel {margin-bottom:17px;background-color:#fff;border:1px solid transparent;border-radius:3px;-webkit-box-shadow:0 1px 1px rgba(0,0,0,.05);box-shadow:0 1px 1px rgba(0,0,0,.05)}
+    .panel-body {padding:15px}
+    .panel-title {margin-top:0;margin-bottom:0;font-size:14px;color:inherit}
+    .label {display:inline;padding:.2em .6em .3em;font-size:75%;font-weight:700;line-height:1;color:#fff;text-align:center;white-space:nowrap;vertical-align:baseline;border-radius:.25em;margin-top: .3em;}
+    .layui-red {color:red}
+    .main_btn > p {height:40px;}
+</style>
+<body>
+<div class="layuimini-container">
+
+    <div class="layui-box">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md12">
+                <fieldset class="layui-elem-field">
+                    <legend><h1>网站简介</h1></legend>
+                    <div class="layui-field-box">
+                        <fieldset class="layui-elem-field layui-field-title">
+                            <legend><h2>一、设想</h2></legend>
+                            <br>
+                            <p>分布式微服务架构是现在比较热门的一种技术，要说明白其含义，首先要从传统架构项目开始说起。</p>
+                            <br>
+                            <p>从我刚开始接触企业级开发时，使用的就已经是SSM整合框架进行开发了，所以对于作为前者的SSH涉猎不多，虽然自己也学习过JavaWeb，但是开发的时候大多数还是使用框架。经过整合配置过后的SSM Coding起来简直不要太爽，开发完成后打包然后扔到tomcat下，一气呵成。</p>
+                            <br>
+                            <p>问题就出现在这里...</p>
+                            <br>
+                            <p>早期的项目使用的都是单服务器，由于需要负载的量级不大，所以这种单服务器架构不但可以轻松负载这些请求，而且对于运维人员来说，由于只有一台服务器，维护起来特别方便，实在遇到无法解决的问题大不了就reboot，"没有重启无法解决的问题"。</p>
+                            <br>
+                            <p>后来随着网民数量的增多，或者公司规模的扩大，自己的网站也就为人所熟知，由于访问量的逐渐增大，单体服务器逐渐无法解决高并发访问，宕机的频率逐渐增加，于是项目从<b>单体服务器模式</b>走向了<b>集群模式</b>，注意，这里的集群模式并不能称为分布式，而只是普通的集群模式，关于集群和分布式的区别，接着往下看你一定能明白。</p>
+                            <br>
+                            <p>所谓集群模式，就是将原来部署在一台服务器上的项目，部署在多台服务器上，每台服务器上都存在有一份完整的项目，然后使用NginX或其它反向代理或负载均衡的手段，将所有的请求通过NginX路由到服务器集群的某个节点上，由于有了负载均衡，使每台服务器接收的请求量都大体相似。</p>
+                            <br>
+                            <p>这样我们的应用终于可以承担起多访问量的压力，如果访问量持续增大，那大不了就继续增加服务器就是了。</p>
+                            <br>
+                            <p>但是不久之后聪明的码农们就发现了不对劲的地方，他们发现虽然这样可以满足高访问量同时访问的需求，但是在很多时候，服务器上的大部分功能并没有被访问，人们似乎都在集中式地访问某一个特定的功能，这种状况是之前没有预先想到的。这种情况显然造成了服务器资源的浪费，每台服务器上都部署了一个完整的项目，但是项目的大部分功能并没有或者只是轻度被使用。</p>
+                            <br>
+                            <p>于是就有了现今的<b>微服务架构</b>，微服务架构将一个完整的项目的不同的功能点拆分成一个个微服务，每个微服务作为一个完整的项目单独部署，共同完成一件事，预测访问量较大的微服务则部署为集群，访问量不大的微服务则布置成单体，这样可以既可以将服务器资源合理利用，又可以让代码解耦，实现高内聚低耦合，在小组中可以让不同的人负责不同的微服务维护和开发，方便进行合作。</p>
+                            <br>
+                            <p>一切看起来似乎相当美好，这样的架构对于像我一样有一点强迫症的码农来说，看起来舒适了许多，每个微服务只需要做好分内的事，然后利用网络来与其它微服务进行通讯。但是对于运维人员来说，仿佛是世界末日，需要维护的服务器和应用数量正在呈指数级上涨，原来部署单服务器应用时，一个团队也许只需要维护一台服务器的正常运行，然后发展到了集群模式，一个团队维护一个集群，但是服务器中的项目是相同的，所以维护起来也还算可以接受，但是现如今不仅要维护多台服务器，每台服务器中的应用又是各不相同，另外每台服务器不再是独立的，而是相互联系构成一个整体，任何一台服务器出现故障，都会造成某一个功能的缺失，所以<b>微服务架构对于运维人员是一种极大的考验</b>。</p>
+                            <br>
+                            <blockquote class="layui-elem-quote main_btn">
+                                <p>运维人员的职责:</p>
+                                <p>1.负责与开发团队协作，部署发布版本。</p>
+                                <p>2.负责日常运维工作，包括系统巡检、配置变更、系统更新、数据备份等。</p>
+                                <p>3.负责应用系统可用性与性能监控，部署自动化监控系统。</p>
+                                <p>4.及时响应并处理各类故障，并为业务部门提供技术支持。</p>
+                                <p>5.负责与合作伙伴等进行技术对接的协调与沟通。</p>
+                                <p>6.负责保障产品7*24H稳定运行，在此期间出现的各种问题可以快速定位并解决。</p>
+                            </blockquote>
+                            <br>
+                            <p>针对以上，本系统的研发目标就在于使用一种可以以一种自动化运维平台的方式，来简化运维工程师的工作，甚至可以让开发人员自运维。</p>
+                        </fieldset>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-box">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md6">
+                <blockquote class="layui-elem-quote main_btn">
+                    <p>本项目服务端基于Spring Cloud微服务框架：<a class="layui-btn layui-btn-xs layui-btn-danger" target="_blank" href="https://www.springcloud.cc/">SpringCloud中文网</a></p>
+                    <p>本项目客户端（前端）基于layuimini-master：<a class="layui-btn layui-btn-xs layui-btn-danger" target="_blank" href="https://github.com/zhongshaofa/layuimini">Layuimini-Master</a></p>
+                    <p>技术博客：<a target="_blank" href="http://blog.objectspace.cn">Object's Blog</a></p>
+                    <p>GitHub地址：
+                        <iframe src="https://ghbtns.com/github-btn.html?user=nocorty&repo=ObjectSpace-Cloud&type=star&count=true" frameborder="0" scrolling="0" width="100px" height="20px"></iframe>
+                        <iframe src="https://ghbtns.com/github-btn.html?user=nocorty&repo=ObjectSpace-Cloud&type=fork&count=true" frameborder="0" scrolling="0" width="100px" height="20px"></iframe>
+                    </p>
+                    <p>喜欢此项目的可以给我的GitHub加个Star支持一下</p>
+                    <p class="layui-red">备注：本项目永久开源，但请勿进行出售或者上传到任何网站，否则将追究相应的责任。</p>
+                </blockquote>
+            </div>
+            <div class="layui-col-md6">
+                <ul class="layui-timeline">
+                    <li class="layui-timeline-item">
+                        <i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+                        <div class="layui-timeline-content layui-text">
+                            <h3 class="layui-timeline-title">2020年1月10日</h3>
+                            <p>
+                                所有的准备工作似乎已经到位，框架已搭建完毕。
+                                <br>可以开始进行各功能点开发。
+                                <br>首页已上线。 <i class="layui-icon"></i>
+                            </p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+</body>
+</html>
