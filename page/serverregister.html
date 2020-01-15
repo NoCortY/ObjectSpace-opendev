@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>layui</title>
+    <title>服务器注册</title>
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -16,27 +16,27 @@
             <legend>服务器注册</legend>
         </fieldset>
 
-        <form class="layui-form" action="" lay-filter="example">
+        <div class="layui-form" action="#" lay-filter="example">
             <div class="layui-form-item">
                 <label class="layui-form-label">服务器名</label>
                 <div class="layui-input-block">
-                    <input type="text" name="username" lay-verify="title" autocomplete="off" placeholder="请输入服务器名   (例如：A应用服务器、Redis缓存服务器)" class="layui-input">
+                    <input type="text" id="serverName" autocomplete="off" placeholder="请输入服务器名   (例如：A应用服务器、Redis缓存服务器)" class="layui-input">
                 </div>
             </div>
             <div class="layui-form-item">
                 <label class="layui-form-label">服务器IP</label>
                 <div class="layui-input-block">
-                    <input type="text" name="username" lay-verify="title" autocomplete="off" placeholder="请输入服务器IP" class="layui-input">
+                    <input type="text" id="serverIp" autocomplete="off" placeholder="请输入服务器IP" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
                 <label class="layui-form-label">域</label>
                 <div class="layui-input-block">
-                    <select name="interest" lay-filter="aihao">
+                    <select id="land" >
                         <option value=""></option>
-                        <option value="1">生产域</option>
-                        <option value="0">测试域</option>
+                        <option value="true">生产域</option>
+                        <option value="false">测试域</option>
                     </select>
                 </div>
             </div>
@@ -45,25 +45,26 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">监控</label>
                 <div class="layui-input-block">
-                    <input type="checkbox" name="close" lay-skin="switch" lay-text="是|否">
+                        <input type="checkbox" id="monitor" lay-skin="switch" lay-text="是|否">
                 </div>
             </div>
             <div class="layui-form-item layui-form-text">
                 <label class="layui-form-label">用途和描述</label>
                 <div class="layui-input-block">
-                    <textarea placeholder="请输入用途和描述。（例如：本服务器用于生产环境下Redis集群节点的的部署。开启端口号xxxx...）" class="layui-textarea" name="desc"></textarea>
+                    <textarea placeholder="请输入用途和描述。（例如：本服务器用于生产环境下Redis集群节点的的部署。开启端口号xxxx...）" class="layui-textarea" id="desc"></textarea>
                 </div>
             </div>
 
             <div class="layui-form-item">
                 <div class="layui-input-block">
-                    <button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+                    <button class="layui-btn" id="register" >立即提交</button>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
 <!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
 <script>
@@ -73,59 +74,50 @@
             , layedit = layui.layedit
             , laydate = layui.laydate;
 
-        //日期
-        laydate.render({
-            elem: '#date'
-        });
-        laydate.render({
-            elem: '#date1'
-        });
 
         //创建一个编辑器
-        var editIndex = layedit.build('LAY_demo_editor');
+        //var editIndex = layedit.build('LAY_demo_editor');
 
-        //自定义验证规则
-        form.verify({
-            title: function (value) {
-                if (value.length < 5) {
-                    return '标题至少得5个字符啊';
+
+
+
+
+        $("#register").on('click',function(){
+            var ipRep = /((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}/g
+            if(!(ipRep.test($("#serverIp").val()))){
+                layer.msg("请输入正确的IP地址");
+            }else {
+                var cloudServer = {};
+                cloudServer.serverName = $("#serverName").val();
+                cloudServer.serverIp = $("#serverIp").val();
+                cloudServer.land = $("#land").val();
+                if($("#monitor").val()==="on"){
+                    cloudServer.monitor=true;
+                }else{
+                    cloudServer.monitor=false;
                 }
+                cloudServer.serverDesc = $("#desc").val();
+                $.ajax({
+                    url: ZUUL_URL + '/ComCenter/CC/server/register',
+                    type: 'post',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    data: JSON.stringify(cloudServer),
+                    success: function (data) {
+                        layer.msg(data.message);
+                    },
+                    error: function () {
+                        layer.msg("网络错误");
+                    }
+                });
             }
-            , pass: [
-                /^[\S]{6,12}$/
-                , '密码必须6到12位，且不能出现空格'
-            ]
-            , content: function (value) {
-                layedit.sync(editIndex);
-            }
         });
 
-        //监听指定开关
-        form.on('switch(switchTest)', function (data) {
-            layer.msg('开关checked：' + (this.checked ? 'true' : 'false'), {
-                offset: '6px'
-            });
-            layer.tips('温馨提示：请注意开关状态的文字可以随意定义，而不仅仅是ON|OFF', data.othis)
-        });
 
-        //监听提交
-        form.on('submit(demo1)', function (data) {
-            layer.alert(JSON.stringify(data.field), {
-                title: '最终的提交信息'
-            })
-            return false;
-        });
 
-        /*//表单初始赋值
-        form.val('example', {
-            "username": "贤心" // "name": "value"
-            , "password": "123456"
-            , "interest": 1
-            , "like[write]": true //复选框选中状态
-            , "close": true //开关状态
-            , "sex": "女"
-            , "desc": "我爱 layui"
-        })*/
 
 
     });
