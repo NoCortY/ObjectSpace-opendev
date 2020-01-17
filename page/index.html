@@ -371,7 +371,7 @@
                 success:function(data){
                     var htmlStr = "";
                     $.each(data.data, function (index, menu){
-                        htmlStr = "<div class='layui-col-xs3 layuimini-qiuck-module'>" +
+                        htmlStr += "<div class='layui-col-xs3 layuimini-qiuck-module'>" +
                             "            <a href='javascript:;' data-iframe-tab='"+menu.href+"'data-title='"+menu.title+"'data-icon='"+menu.icon+"'>" +
                             "                <i class='"+menu.icon+"'></i>" +
                             "                <cite>"+menu.title+"</cite>" +
