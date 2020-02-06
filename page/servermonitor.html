@@ -53,14 +53,6 @@
                                     <div class="layui-row layui-col-space10">
                                         <div class="layui-col-xs12">
                                             <div class="panel layui-bg-number">
-                                                <!--<div class="panel-body">
-                                                    <div class="panel-title">
-                                                        <h5>1970年01月01日</h5>
-                                                    </div>
-                                                    <div class="panel-content">
-                                                        <h1 class="no-margins" id="userCount">14:18</h1>
-                                                    </div>
-                                                </div>-->
                                                 <div class="clock">
                                                     <div class="flip">
                                                         <div class="digital front" data-number="0"></div>
@@ -102,7 +94,7 @@
                             <div class="layui-card-header"><i class="fa fa-dashboard icon icon-blue"></i>服务器状态</div>
                             <div class="layui-card-body">
                                 <div class="welcome-module">
-                                    <div id="fastGate" class="layui-row layui-col-space10 layuimini-qiuck">
+                                    <div id="serverStatus" class="layui-row layui-col-space10 layuimini-qiuck">
                                         <div class="layui-col-xs4">
                                             <div class="panel layui-bg-number">
                                                 <div class="panel-body">
@@ -168,7 +160,12 @@
                 <div class="layui-card">
                     <div class="layui-card-header"><i class="fa fa-list icon"></i>资产清单</div>
                     <div class="layui-card-body">
-                        <div id="echarts-records" style="width: 100%;min-height:500px"></div>
+                        <table class="layui-hide" id="serverListTable"></table>
+                        <script type="text/html" id="operate">
+                            <!-- 数据表格按钮绑定 -->
+                            <a class="layui-btn layui-btn layui-btn-xs" lay-event="stopsub">详情</a>
+                            <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="addwhite">重启</a>
+                        </script>
                     </div>
                 </div>
             </div>
@@ -180,11 +177,12 @@
 <script src="../js/script.js" charset="utf-8"></script>
 <script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
-    layui.use(['layer', 'layuimini','echarts'], function () {
+    layui.use(['layer', 'layuimini','echarts','table'], function () {
         var $ = layui.jquery,
             layer = layui.layer,
             layuimini = layui.layuimini,
-            echarts = layui.echarts;
+            echarts = layui.echarts,
+            table = layui.table;
         init();
         /**
          * 查看公告信息
@@ -217,89 +215,20 @@
             });
         });
 
-        /**
-         * 报表功能
-         */
-        var echartsRecords = echarts.init(document.getElementById('echarts-records'), 'walden');
-        $.ajax({
-            url:ZUUL_URL+"/LogCenter/LC/callCount",
-            type:'get',
-            xhrFields: {
-                withCredentials: true
-            },
-            success:function(data){
-                if(data.code==="1001"){
-                    var dataLegend = [];
-                    var dataDate = [];
-                    var echartDataList = [];
-                    //是否已经对日期赋值
-                    var dateFlag = false;
-                    $.each(data.data,function(key,value){
-                        //Echart Data部分用的对象
-                        var echartDataObject = {};
-                        //Echart Data部分用的对象数组
-                        var echartData = [];
-                        dataLegend.push(key);
-                        if(!dateFlag) {
-                            $.each(value, function (index, item) {
-                                dataDate.push(item.callDate);
-                                dateFlag = true;
-                            });
-                        }
-                        $.each(value,function(index,item){
-                            echartData.push(item.callCount);
-                        });
-                        echartDataObject.name = key;
-                        echartDataObject.data = echartData;
-                        echartDataObject.type='line';
-                        echartDataList.push(echartDataObject);
-                    });
-                    var optionRecords = {
-                        tooltip: {
-                            trigger: 'axis'
-                        },
-                        legend: {
-                            data:dataLegend
-                        },
-                        grid: {
-                            left: '3%',
-                            right: '4%',
-                            bottom: '3%',
-                            containLabel: true
-                        },
-                        toolbox: {
-                            feature: {
-                                saveAsImage: {}
-                            }
-                        },
-                        xAxis: {
-                            type: 'category',
-                            boundaryGap: false,
-                            data: dataDate
-                        },
-                        yAxis: {
-                            type: 'value'
-                        },
-                        series:echartDataList
-                    };
-                    echartsRecords.setOption(optionRecords);
-                }else{
-                    layuimini.msg_error('请求接口调用趋势图失败');
-                }
-            },
-            error:function (e) {
-                layuimini.msg_error('网络错误');
-            }
-        });
-
-
-        // echarts 窗口缩放自适应
-        window.onresize = function(){
-            echartsRecords.resize();
-        }
-
         function init(){
-            $.ajax({
+            table.render({
+                elem: '#serverListTable'
+                ,url:'/demo/table/user/'
+                ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+                ,cols: [[
+                    {field:'serverName', title: '服务器名'}
+                    ,{field:'serverIp', title: 'IP'}
+                    ,{field:'isMonitor', title: '是否监控', sort: true}
+                    ,{field:'serverDesc', title: '详细描述'}
+                    ,{field: 'operate',title: '操作',fixed:'right',width:115,toolbar:'#operate'}
+                ]]
+            });
+           /* $.ajax({
                 //获取当前注册用户数量
                 url:ZUUL_URL+'/AuthCenter/UC/userCount',
                 type:'get',
@@ -349,7 +278,7 @@
                 error:function (e) {
                     layuimini.msg_error('网络错误');
                 }
-            });
+            });*/
             $.ajax({
                 //获取notice
                 url:ZUUL_URL+"/LogCenter/Logistics/notice",
