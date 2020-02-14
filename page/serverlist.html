@@ -192,10 +192,10 @@
             var title = $(this).children('.layuimini-notice-title').text(),
                 noticeTime = $(this).children('.layuimini-notice-extra').text(),
                 content = $(this).children('.layuimini-notice-content').html();
-            var html = '<div style="padding:15px 20px; text-align:justify; line-height: 22px;border-bottom:1px solid #e2e2e2;background-color: #2f4056;color: #ffffff">\n' +
-                '<div style="text-align: center;margin-bottom: 20px;font-weight: bold;border-bottom:1px solid #718fb5;padding-bottom: 5px"><h4 class="text-danger">' + title + '</h4></div>\n' +
-                '<div style="font-size: 12px">' + content + '</div>\n' +
-                '</div>\n';
+            var html = '<div style="padding:15px 20px; text-align:justify; line-height: 22px;border-bottom:1px solid #e2e2e2;background-color: #2f4056;color: #ffffff">' +
+                '<div style="text-align: center;margin-bottom: 20px;font-weight: bold;border-bottom:1px solid #718fb5;padding-bottom: 5px"><h4 class="text-danger">' + title + '</h4></div>' +
+                '<div style="font-size: 12px">' + content + '</div>' +
+                '</div>';
             parent.layer.open({
                 type: 1,
                 title: '系统公告'+'<span style="float: right;right: 1px;font-size: 12px;color: #b1b3b9;margin-top: 1px">'+noticeTime+'</span>',
@@ -239,9 +239,9 @@
                 ,cols: [[
                     {field:'serverIp', title: '服务器IP'}
                     ,{field:'serverName', title: '服务器名'}
-                    ,{field:'serverOsType',title:'操作系统'}
+                    ,{field:'serverOsType',title:'操作系统',sort: true}
                     ,{field:'serverOsVersion',title:'操作系统版本'}
-                    ,{field:'isMonitor', title: '是否监控', sort: true}
+                    ,{field:'isMonitor', title: '是否监控'}
                     ,{field: 'operate',title: '操作',fixed:'right',width:200,toolbar:'#operate'}
                 ]]
             });
@@ -269,261 +269,180 @@
         table.on('tool(serverListTable)',function(data){
             var rowData = data.data;
             var event = data.event;
+            var serverData;
+            var cpuHtml = "",diskHtml = "",netHtml = "";
+            $.ajax({
+                url:ZUUL_URL+"/ComCenter/CC/server/serverDetail/"+rowData.serverIp,
+                type:'POST',
+                async:false,
+                xhrFields:{
+                    withCredentials:true
+                },
+                success:function(data){
+                    serverData=data.data;
+                }
+            });
+                    console.log(serverData);
+            $.each(serverData.cpuDetailDtos,function(index,obj){
+                cpuHtml+="<fieldset class='layui-elem-field layui-field-title'>" +
+                    " <legend>核心:"+obj.cpuId+"</legend>" +
+                    "<div class='layui-form layui-field-box'>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>Cpu核心Id:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.cpuId+"' disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>频率(MHz):</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.frequency+"'disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "     </div>"+
+                    "<div class='layui-form'>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>生产厂商:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.vendor+"' disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>型号:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.model+"' disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "</div>" +
+                    "</fieldset>";
+
+            });
+            $.each(serverData.diskDetailDtos,function(index,obj){
+                diskHtml+="<fieldset class='layui-elem-field layui-field-title'>" +
+                    " <legend>盘符:"+index+"</legend>" +
+                    "<div class='layui-form layui-field-box'>" +
+                    "       <div class='layui-inline'>"+
+                    "           <label class='layui-form-label'>盘符(挂载点):</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.diskName+"' disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "       <div class='layui-inline'>"+
+                    "           <label class='layui-form-label'>文件系统:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.diskType+"'disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "     </div>"+
+                    "<div class='layui-form'>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>容量(B):</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.total+"' disabled>" +
+                    "           </div>" +
+                    "       </div>"+
+                    "</div>" +
+                    "</fieldset>";
+            });
+            $.each(serverData.netDetailDtos,function(index,obj){
+                netHtml+="<fieldset class='layui-elem-field layui-field-title'>" +
+                    " <legend>网卡:"+index+"</legend>" +
+                    "<div class='layui-form layui-field-box'>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>网卡名:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.netName+"' disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>Ip:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.netIp+"'disabled>" +
+                    "           </div>" +
+                    "       </div>" +
+                    "     </div>"+
+                    "<div class='layui-form'>" +
+                    "       <div class='layui-inline'>" +
+                    "           <label class='layui-form-label'>子网掩码:</label>" +
+                    "           <div class='layui-inline'>" +
+                    "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+obj.netMask+"' disabled>" +
+                    "           </div>" +
+                    "       </div>"+
+                    "</div>" +
+                    "</fieldset>";
+            });
             if(event === "serverDetail"){
                 //stopsubBox是关停备注弹出的对话框
                 var serverDetail =layer.open({
                     id:serverDetail,
                     type:1,
-                    title:"服务器：192.168.43.246  状态：正常运行",
-                    skin:"layui-layer-molv",
-                    area: ['700px', '600px'],
+                    title:"<i class='fa fa-eye'>  服务器：192.168.43.246  状态：正常运行</i>",
+                    area: ['750px', '600px'],
                     closeBtn:1,
                     shadeClose:true,
                     maxmin:true,
                     resize:true,
-                    content: '<fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">\n' +
-                '                <legend>号码基本信息</legend>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">电话号码:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabProductNo" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">品牌:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabBrandName" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">状态:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabStatusName" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">呼叫地市:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="callCity" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '            </fieldset>\n' +
-                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">\n' +
-                '                <legend>号码详细信息</legend>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">套餐档次:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabMonthFee" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">当月上网流量:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabTmGprsFlow" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">归属集团:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabEntName" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">本月被识别为高频的次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabGbCntM" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">是否沉默用户:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIsCm" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">IMEI:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabImei" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">是否黑IMEI:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIsBimei" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">入网方式:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabNewType" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">入网工号:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabNewOperator" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">被叫离散度:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabCalledDayRate" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">是否开通宽带:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIsMw" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">是否开通家庭网:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIsFamily" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">是否开通虚拟网:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIsVpmn" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '            </fieldset>\n' +
-                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">\n' +
-                '                <legend>证件下号码信息</legend>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">号码数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIdenCnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">高频外呼号码数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIdenGpcnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">副卡数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">高频外呼副卡数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIdenGpfkcnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">归属地数量:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabIdenCityCnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">其他号码以及高频情况:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '            </fieldset>\n' +
-                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">\n' +
-                '                <legend>通话详细信息</legend>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">当月短信量:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabTmSmsCount" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">主叫接通次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabTmCallSuccNums" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">主叫网间次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabWjCnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">主叫网间接通次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabWjsCnt" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">网间通话占比:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabWjZb" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">被叫次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabCalledDayNums" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">被叫接通次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabDCallSuccNums" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">主叫省外次数:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabTmCallProvoutNums" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
-                '                <div class="layui-form">\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">主叫有话单占比:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabZjZb" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                    <div class="layui-inline">\n' +
-                '                        <label class="layui-form-label">平均通话时长:</label>\n' +
-                '                        <div class="layui-inline">\n' +
-                '                            <input type="text" id="tabAvgMou" class="layui-input layui-bg-gray" disabled>\n' +
-                '                        </div>\n' +
-                '                    </div>\n' +
-                '                </div>\n' +
+                    content: '<fieldset class="layui-elem-field layui-field-title layui-col-space15" style="margin-top: 30px;">' +
+                '                <legend>服务器基本信息</legend>' +
+                                "<div class='layui-form layui-field-box'>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>主机名:</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.computerName+"' disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>Ip:</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.ip+"'disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "     </div>"+
+                                "<div class='layui-form'>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>操作系统:</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.osName+"' disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>版本:</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.osVersion+"' disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "</div>"+
+                                "<div class='layui-form'>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>架构:</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.osArch+"' disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>内存容量(B):</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.memTotal+"' disabled>" +
+                                "           </div>" +
+                                "       </div>" +
+                                "</div>"+
+                                "<div class='layui-form'>" +
+                                "       <div class='layui-inline'>" +
+                                "           <label class='layui-form-label'>虚拟内存(B):</label>" +
+                                "           <div class='layui-inline'>" +
+                                "               <input type='text' id='cpuId' class='layui-input layui-bg-gray' value='"+serverData.swapTotal+"' disabled>" +
+                                "           </div>" +
+                                "       </div>"+
+                                "</div>"+
+                '            </fieldset>' +
+                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">' +
+                '                <legend>CPU信息</legend>' +cpuHtml +
+                '            </fieldset>' +
+                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">' +
+                '                <legend>硬盘信息</legend>'+ diskHtml +
+                '            </fieldset>' +
+                '            <fieldset class="layui-elem-field  layui-field-title layui-col-space15" style="margin-top: 30px;">' +
+                '                <legend>网卡信息</legend>' +netHtml+
                 '            </fieldset>'
 
                 });
