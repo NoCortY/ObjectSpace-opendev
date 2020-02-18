@@ -10,6 +10,15 @@
     <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
     <link rel="stylesheet" href="../css/public.css" media="all">
     <style>
+        .layui-card-item{
+            transition: all 200ms;
+        }
+        .layui-card-item:hover{
+            transform:scale(1,1.01);
+            background-color: whitesmoke;
+            border-radius: 25px;
+            box-shadow: red;
+        }
         .layui-card {border:1px solid #f2f2f2;border-radius:5px;}
         .icon {margin-right:10px;color:#1aa094;}
         .icon-cray {color:#ffb800!important;}
@@ -41,7 +50,7 @@
             <div class="layui-col-md12">
                 <div class="layui-row layui-col-space15">
                     <div class="layui-col-md3">
-                        <div class="layui-card">
+                        <div class="layui-card layui-card-item">
                             <div class="layui-card-header"><i class="fa fa-desktop"></i>   服务器IP:192.168.43.246    状态: <span class="layui-badge layui-bg-blue">在线</span></div>
                             <div class="layui-card-body">
                                 <div class="welcome-module">
