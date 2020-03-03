@@ -48,36 +48,13 @@
     <div class="layuimini-main">
         <div class="layui-row layui-col-space15">
             <div class="layui-col-md12">
-                <div class="layui-row layui-col-space15">
+                <div class="layui-row layui-col-space15" id="serverResumeContainer">
                     <div class="layui-col-md3">
                         <div class="layui-card layui-card-item">
-                            <div class="layui-card-header"><i class="fa fa-desktop"></i>   服务器IP:192.168.43.246    状态: <span class="layui-badge layui-bg-blue">在线</span></div>
-                            <div class="layui-card-body">
-                                <div class="welcome-module">
-                                    <div class="layui-row layui-col-space10">
-                                        <div class="layui-col-xs12">
-                                            <span>CPU:</span>
-                                            <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                                                <div class="layui-progress-bar layui-bg-green" lay-percent="30.9%"></div>
-                                            </div>
-                                            <span>硬盘:</span>
-                                            <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                                                <div class="layui-progress-bar layui-bg-green" lay-percent="50%"></div>
-                                            </div>
-                                            <span>内存:</span>
-                                            <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                                                <div class="layui-progress-bar layui-bg-green" lay-percent="50%"></div>
-                                            </div>
-                                            <span>网络:</span>
-                                            <div class="layui-col-xs-offset3">
-                                                <i class="fa fa-arrow-circle-o-up icon-blue"></i> 发送:10kB/s  <i class="fa fa-arrow-circle-o-down icon-tip"></i>   接收:120kb
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -87,108 +64,143 @@
 <script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
 <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
 <script>
-    layui.use(['layer', 'layuimini','echarts'], function () {
+    layui.use(['layer', 'layuimini','echarts','element'], function () {
         var $ = layui.jquery,
             layer = layui.layer,
             layuimini = layui.layuimini,
-            echarts = layui.echarts;
+            echarts = layui.echarts,
+            element = layui.element;
 
-        /**
-         * 查看公告信息
-         **/
-        $('body').on('click', '.layuimini-notice', function () {
-            var title = $(this).children('.layuimini-notice-title').text(),
-                noticeTime = $(this).children('.layuimini-notice-extra').text(),
-                content = $(this).children('.layuimini-notice-content').html();
-            var html = '<div style="padding:15px 20px; text-align:justify; line-height: 22px;border-bottom:1px solid #e2e2e2;background-color: #2f4056;color: #ffffff">\n' +
-                '<div style="text-align: center;margin-bottom: 20px;font-weight: bold;border-bottom:1px solid #718fb5;padding-bottom: 5px"><h4 class="text-danger">' + title + '</h4></div>\n' +
-                '<div style="font-size: 12px">' + content + '</div>\n' +
-                '</div>\n';
-            parent.layer.open({
-                type: 1,
-                title: '系统公告'+'<span style="float: right;right: 1px;font-size: 12px;color: #b1b3b9;margin-top: 1px">'+noticeTime+'</span>',
-                area: '300px;',
-                shade: 0.8,
-                id: 'layuimini-notice',
-                btn: ['查看', '取消'],
-                btnAlign: 'c',
-                moveType: 1,
-                content:html,
-                success: function (layero) {
-                    var btn = layero.find('.layui-layer-btn');
-                    btn.find('.layui-layer-btn0').attr({
-                        href: 'https://gitee.com/zhongshaofa/layuimini',
-                        target: '_blank'
-                    });
-                }
-            });
+        var load = layer.open({
+            type: 3,
+            shade: 0.2
         });
-
-        /**
-         * 报表功能
-         */
-        var echartsRecords = echarts.init(document.getElementById('echarts-records'), 'walden');
-        var optionRecords = {
-            tooltip: {
-                trigger: 'axis'
-            },
-            legend: {
-                data:['邮件营销','联盟广告','视频广告','直接访问','搜索引擎']
-            },
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
-            toolbox: {
-                feature: {
-                    saveAsImage: {}
-                }
-            },
-            xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: ['周一','周二','周三','周四','周五','周六','周日']
-            },
-            yAxis: {
-                type: 'value'
-            },
-            series: [
-                {
-                    name:'邮件营销',
-                    type:'line',
-                    data:[120, 132, 101, 134, 90, 230, 210]
-                },
-                {
-                    name:'联盟广告',
-                    type:'line',
-                    data:[220, 182, 191, 234, 290, 330, 310]
-                },
-                {
-                    name:'视频广告',
-                    type:'line',
-                    data:[150, 232, 201, 154, 190, 330, 410]
-                },
-                {
-                    name:'直接访问',
-                    type:'line',
-                    data:[320, 332, 301, 334, 390, 330, 320]
-                },
-                {
-                    name:'搜索引擎',
-                    type:'line',
-                    data:[820, 932, 901, 934, 1290, 1330, 1320]
-                }
-            ]
+        //判断服务器个数
+        var serverCount = -1;
+        //判断是否是第一次打开本页面
+        var isFirst = true;
+        //连接websocket
+        var ws = new WebSocket("ws://127.0.0.1:7000/ObjectCloud/ComCenter/serverResumeWS");
+        // var ws = new WebSocket("ws://127.0.0.1:7303/componentWS");
+        ws.onopen = function() {
+            console.log('web socket已连接');
         };
-        echartsRecords.setOption(optionRecords);
+        ws.onmessage = function (e) {
+            console.log(e.data);
+            var obj = JSON.parse(e.data);
+            //判断是否有新增的服务器需要进行重新渲染
+            if(serverCount!=obj.length){
+                //如果不相等，说明新增了服务器
+                //重新渲染
+                isFirst = true;
+            }
+            serverCount = obj.length;
 
-        // echarts 窗口缩放自适应
-        window.onresize = function(){
-            echartsRecords.resize();
+            //在线状态
+            var onlineStatus;
+            if (isFirst) {
+                var htmlStr = "";
+                $.each(obj, function (index, serverResume) {
+                    //第一次循环，设置dom
+                    var legalIdFilter = serverResume.serverIp.replace(/\./g,"_");
+                    htmlStr += "<div class=\"layui-col-md3\">\n" +
+                        "                        <div class=\"layui-card layui-card-item\">\n" +
+                        "                            <div class=\"layui-card-header\" id='onlineStatus'><i class=\"fa fa-desktop\"></i>   服务器IP:" + serverResume.serverIp + "    状态:" + "<span class=\"layui-badge layui-bg-blue\" id='onlineStatus"+legalIdFilter+"'></span>" + "</div>\n" +
+                        "                            <div class=\"layui-card-body\">\n" +
+                        "                                <div class=\"welcome-module\">\n" +
+                        "                                    <div class=\"layui-row layui-col-space10\">\n" +
+                        "                                        <div class=\"layui-col-xs12\">\n" +
+                        "                                            <span>CPU:</span>\n" +
+                        "                                            <div class=\"layui-progress layui-progress-big\" lay-filter='cpu" + legalIdFilter + "' lay-showPercent=\"yes\">\n" +
+                        "                                                <div class=\"layui-progress-bar layui-bg-green\" id='cpu"+legalIdFilter+"'></div>\n" +
+                        "                                            </div>\n" +
+                        "                                            <span>硬盘:</span>\n" +
+                        "                                            <div class=\"layui-progress layui-progress-big\" lay-filter='disk" + legalIdFilter + "' lay-showPercent=\"yes\">\n" +
+                        "                                                <div class=\"layui-progress-bar layui-bg-green\" id='disk"+legalIdFilter+"'></div>\n" +
+                        "                                            </div>\n" +
+                        "                                            <span>内存:</span>\n" +
+                        "                                            <div class=\"layui-progress layui-progress-big\" lay-filter='mem" + legalIdFilter + "' lay-showPercent=\"yes\">\n" +
+                        "                                                <div class=\"layui-progress-bar layui-bg-green\" id='mem"+legalIdFilter+"'></div>\n" +
+                        "                                            </div>\n" +
+                        "                                            <span>网络:</span>\n" +
+                        "                                            <div class=\"layui-col-xs-offset3\" id='net"+legalIdFilter+"'>\n" +
+                        "                                                <i class=\"fa fa-arrow-circle-o-up icon-blue\"></i>发送:" + serverResume.sendPackageTotal + "包                  <i class=\"fa fa-arrow-circle-o-down icon-tip\"></i>   接收:" + serverResume.recPackageTotal+"包"+
+                        "                                            </div>\n"+
+                    "                                            </div>\n" +
+                    "                                        </div>\n" +
+                    "                                    </div>\n" +
+                    "                                </div>\n" +
+                    "                            </div>\n" +
+                    "                        </div>"
+                });
+
+                //设置dom
+                $("#serverResumeContainer").html(htmlStr);
+                $.each(obj,function(index,serverResume){
+                    var legalIdFilter = serverResume.serverIp.replace(/\./g,"_");
+                    //第二次循环，上值
+                    if (serverResume.onlineStatus === true) {
+                        $("#onlineStatus"+legalIdFilter).attr('class','layui-badge layui-bg-blue');
+                        $("#onlineStatus"+legalIdFilter).html('在线');
+                    } else {
+
+                        $("#onlineStatus"+legalIdFilter).attr('class','layui-badge layui-bg-red');
+                        $("#onlineStatus"+legalIdFilter).html('离线');
+                    }
+                    var cpuUsedPercent = serverResume.cpuUsedPercent*100;
+                    var memUsedPercent = serverResume.memUsedPercent*100;
+                    var diskUsedPercent = serverResume.diskUsedPercent;
+                    //保留两位小数
+                    cpuUsedPercent = cpuUsedPercent.toFixed(2);
+                    memUsedPercent = memUsedPercent.toFixed(2);
+                    diskUsedPercent = diskUsedPercent.toFixed(2);
+                    //渲染进度条
+                    element.progress('cpu'+legalIdFilter,serverResume.cpuUsedPercent*100+'%');
+                    element.progress('mem'+legalIdFilter,serverResume.memUsedPercent*100+'%');
+                    element.progress('disk'+legalIdFilter,serverResume.diskUsedPercent+'%');
+                    //渲染数字
+                    $("#cpu"+legalIdFilter).attr('lay-percent',cpuUsedPercent+'%');
+                    $("#mem"+legalIdFilter).attr('lay-percent',memUsedPercent+'%');
+                    $("#disk"+legalIdFilter).attr('lay-percent',diskUsedPercent+'%');
+                    element.render('progress');
+                });
+                isFirst=false;
+                layer.close(load);
+            }else{
+                //如果不是第一次，那么直接修改dom即可，节约客户端cpu
+                $.each(obj, function (index, serverResume) {
+                    var legalIdFilter = serverResume.serverIp.replace(/\./g,"_");
+                    if (serverResume.onlineStatus == true) {
+                        $("#onlineStatus"+legalIdFilter).attr('class','layui-badge layui-bg-blue');
+                        $("#onlineStatus"+legalIdFilter).html('在线');
+                    } else {
+                        $("#onlineStatus"+legalIdFilter).attr('class','layui-badge layui-bg-red');
+                        $("#onlineStatus"+legalIdFilter).html('离线');
+                    }
+                    var legalIdFilter = serverResume.serverIp.replace(/\./g,"_");
+                    var cpuUsedPercent = serverResume.cpuUsedPercent*100;
+                    var memUsedPercent = serverResume.memUsedPercent*100;
+                    var diskUsedPercent = serverResume.diskUsedPercent;
+                    //保留两位小数
+                    cpuUsedPercent = cpuUsedPercent.toFixed(2);
+                    memUsedPercent = memUsedPercent.toFixed(2);
+                    diskUsedPercent = diskUsedPercent.toFixed(2);
+                    //渲染进度条
+                    element.progress('cpu'+legalIdFilter,serverResume.cpuUsedPercent*100+'%');
+                    element.progress('mem'+legalIdFilter,serverResume.memUsedPercent*100+'%');
+                    element.progress('disk'+legalIdFilter,serverResume.diskUsedPercent+'%');
+                    //渲染数字
+                    $("#cpu"+legalIdFilter).attr('lay-percent',cpuUsedPercent+'%');
+                    $("#mem"+legalIdFilter).attr('lay-percent',memUsedPercent+'%');
+                    $("#disk"+legalIdFilter).attr('lay-percent',diskUsedPercent+'%');
+                    element.render('progress');
+                    $("#net"+legalIdFilter).html("<i class=\"fa fa-arrow-circle-o-up icon-blue\"></i>发送:" + serverResume.sendPackageTotal + "包                  <i class=\"fa fa-arrow-circle-o-down icon-tip\"></i>   接收:" + serverResume.recPackageTotal+"包");
+                });
+            }
         }
-
+        ws.onclose = function() {
+            console.log('close');
+        };
     });
 </script>
 </body>

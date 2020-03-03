@@ -5,33 +5,7 @@
     <title>Title</title>
 </head>
 <body>
-<div class="layui-card" onmouseover="overShow()" onmouseleave="outHide()">
-    <div class="layui-card-header"><i class="fa fa-desktop"></i>   服务器IP:192.168.43.246    状态: <span class="layui-badge layui-bg-blue">在线</span></div>
-    <div class="layui-card-body">
-        <div class="welcome-module">
-            <div class="layui-row layui-col-space10">
-                <div class="layui-col-xs12">
-                    <span>CPU:</span>
-                    <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                        <div class="layui-progress-bar layui-bg-green" lay-percent="30.9%"></div>
-                    </div>
-                    <span>硬盘:</span>
-                    <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                        <div class="layui-progress-bar layui-bg-green" lay-percent="50%"></div>
-                    </div>
-                    <span>内存:</span>
-                    <div class="layui-progress layui-progress-big" lay-showPercent="yes">
-                        <div class="layui-progress-bar layui-bg-green" lay-percent="50%"></div>
-                    </div>
-                    <span>网络:</span>
-                    <div class="layui-col-xs-offset3">
-                        <i class="fa fa-arrow-circle-o-up icon-blue"></i> 发送:10kB/s  <i class="fa fa-arrow-circle-o-down icon-tip"></i>   接收:120kb
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 <div id="showDiv" style="position: absolute; background-color: white; border: 1px solid black;"></div>
 <script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
     <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
@@ -41,20 +15,20 @@
                 layer = layui.layer,
                 layuimini = layui.layuimini,
                 echarts = layui.echarts;
-    function overShow() {
-        layer.msg("悬停");
-        var showDiv = document.getElementById('showDiv');
-        showDiv.style.left = event.clientX;
-        showDiv.style.top = event.clientY;
-        showDiv.style.display = 'block';
-        showDiv.innerHTML = '鼠标停留显示内容2';
-    }
-
-    function outHide() {
-        var showDiv = document.getElementById('showDiv');
-        showDiv.style.display = 'none';
-        showDiv.innerHTML = '';
-    }
+            // 打开一个 web socket
+            var ws = new WebSocket("ws://127.0.0.1:7000/ObjectCloud/ComCenter/serverGeneralWS");
+           // var ws = new WebSocket("ws://127.0.0.1:7303/componentWS");
+            ws.onopen = function() {
+                // Web Socket 已连接上，使用 send() 方法发送数据
+                ws.send("测试发送");
+                console.log('open');
+            };
+            ws.onmessage = function (e) {
+                console.log('message', e.data);
+            };
+            ws.onclose = function() {
+                console.log('close');
+            };
         });
 </script>
 </body>
