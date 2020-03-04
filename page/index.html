@@ -70,7 +70,7 @@
                                                         <h5>服务器统计</h5>
                                                     </div>
                                                     <div class="panel-content">
-                                                        <h1 class="no-margins">获取中</h1>
+                                                        <h1 class="no-margins" id="serverCount">获取中</h1>
                                                         <small>当前托管服务器数</small>
                                                     </div>
                                                 </div>
@@ -333,6 +333,20 @@
         }
 
         function init(){
+            $.ajax({
+                //获取当前托管服务器数量
+                url:ZUUL_URL+'/ComCenter/CC/server/serverCount',
+                type:'get',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success:function(data){
+                    $("#serverCount").html(data.data);
+                },
+                error:function (e) {
+                    layuimini.msg_error('网络错误');
+                }
+            });
             $.ajax({
                 //获取当前注册用户数量
                 url:ZUUL_URL+'/AuthCenter/UC/userCount',
