@@ -19,57 +19,8 @@
     <legend>实例运行时监控</legend>
 
 <div class="layui-fluid" id="LAY-component-grid-mobile">
-    <div class="layui-row layui-col-space10">
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"><a href="" style="color: blue">CPU使用率(%)</a> <span style="float: right">周期:30s</span></div>
-                <div class="layui-card-body">
-                    <div id="echarts-records" style="width: 100%;min-height:200px">Cpu波形图</div>
-                </div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"></div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header">CPU使用率(%)</div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header">CPU使用率(%)</div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"></div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"></div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"></div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
-        <div class="layui-col-xs3">
-            <div class="layui-card">
-                <div class="layui-card-header"></div>
-                <div class="layui-card-body"></div>
-            </div>
-        </div>
+    <div class="layui-row layui-col-space10" id="cpuDataContainer">
+
     </div>
     <div class="layui-row layui-col-space10">
         <div class="layui-col-xs6">
@@ -111,6 +62,7 @@
 <script src="../lib/layui-v2.5.4/layui.js"></script>
 <script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
 <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
 $(function(){
     layui.use(['layuimini','element','layer','echarts'],function(){
@@ -118,62 +70,120 @@ $(function(){
             element = layui.element,
             layer = layui.layer,
             echarts = layui.echarts;
-    //echarts自适应
-    var echartsRecords = echarts.init(document.getElementById('echarts-records'),'light');
-    window.onresize = function(){
-        echartsRecords.resize();
-    }
-    option = {
-        tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-                type: 'cross',
-                label: {
-                    backgroundColor: '#6a7985'
-                }
-            }
-        },
-        splitLine :{    //网格线
-            lineStyle:{
-                type:'dashed'    //设置网格线类型 dotted：虚线   solid:实线
+
+        //获取需要获取指标的IP（从父页面传值）
+        var serverIp = getUrlParam("ip");
+/*******************************************************CPU*****************************************************/
+        //服务器cpu数据指标
+        var cpuRuntimeData;
+        //CPU渲染
+        var cpuHtmlStr = "";
+        //默认请求30分钟的数据，可调
+        $.ajax({
+            url:ZUUL_URL+"/ComCenter/CC/server/runtimeCpuRecord/"+serverIp+"/"+30,
+            type:'GET',
+            async:false,
+            xhrFields: {
+                withCredentials: true
             },
-            show:true //隐藏或显示
-        },
-        toolbox: {
-            feature: {
-                saveAsImage: {}
+            success:function(data){
+                cpuRuntimeData = data.data;
+            },
+            error:function (e) {
+                layuimini.msg_error('网络错误');
             }
-        },
-        grid: {
-            top:'3%',
-            left: '1%',
-            right: '3%',
-            bottom: '3%',
-            containLabel: true
-        },
-        xAxis: [
-            {
-                type: 'category',
-                boundaryGap: false,
-                data: ['12:00:00', '12:00:30', '12:01:00', '12:01:30', '12:02:00', '12:02:30', '12:03:00', '12:03:30', '12:04:00', '12:04:30', '12:05:00', '12:05:30','12:06:00','12:06:30','12:07:00','12:07:30','12:08:00']
-            }
-        ],
-        yAxis: [
-            {
-                type: 'value'
-            }
-        ],
-        series: [
-            {
-                name: 'Cpu使用率(%)',
-                type: 'line',
-                stack: '使用率',
-                areaStyle: {},
-                data: [21.7, 30, 13, 90, 12, 80, 20, 12, 80, 20, 12, 80,12, 80, 20, 12, 80]
-            }
-        ]
-    };
-        echartsRecords.setOption(option);
+        });
+        //渲染卡片
+        var cardLength = 12/cpuRuntimeData.length;
+        if(cardLength<3){
+            //卡片长度最少为3
+            cardLength = 3;
+        }
+        $.each(cpuRuntimeData,function(index,cpu){
+            cpuHtmlStr+="<div class=\"layui-col-xs"+cardLength+"\">\n" +
+                "            <div class=\"layui-card\">\n" +
+                "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">CPU使用率——核心"+cpu.cpuId+"(%)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
+                "                <div class=\"layui-card-body\">\n" +
+                "                    <div id=\"echarts-records-"+cpu.cpuId+"\" style=\"width: 100%;min-height:200px\">Cpu波形图</div>\n" +
+                "                </div>\n" +
+                "            </div>\n" +
+                "        </div>"
+        });
+        $("#cpuDataContainer").html(cpuHtmlStr);
+        //渲染Echarts
+
+        $.each(cpuRuntimeData,function (index,cpu) {
+            console.log(cpu);
+            var cpuTime = [];
+            var cpuUserUsed = [];
+            var cpuSystemUsed = [];
+            var cpuCombine = [];
+            var echartsRecords = echarts.init(document.getElementById('echarts-records-'+cpu.cpuId),'light');
+            $.each(cpu.cpuRecordDtoList,function(index,cpuCore){
+                cpuTime.push(cpuCore.recordTime);
+                cpuUserUsed.push(cpuCore.userUsed);
+                cpuSystemUsed.push(cpuCore.systemUsed);
+                cpuCombine.push(cpuCore.combine);
+            });
+            var option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        label: {
+                            backgroundColor: '#6a7985'
+                        }
+                    }
+                },
+                splitLine :{    //网格线
+                    lineStyle:{
+                        type:'dashed'    //设置网格线类型 dotted：虚线   solid:实线
+                    },
+                    show:true //隐藏或显示
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                grid: {
+                    top:'3%',
+                    left: '1%',
+                    right: '3%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: cpuTime
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value'
+                    }
+                ],
+                series: [
+                    {
+                        name: 'Cpu使用率(%)',
+                        type: 'line',
+                        stack: '使用率',
+                        areaStyle: {},
+                        data: cpuCombine
+                    }
+                ]
+            };
+            echartsRecords.setOption(option);
+        });
+/**************************************************************************************************************/
+//echarts自适应
+
+       /* window.onresize = function(){
+            echartsRecords.resize();
+        };*/
+
 
     });
 });

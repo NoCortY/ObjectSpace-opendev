@@ -173,7 +173,8 @@
 </div>
 <script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
 <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
-<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-7"></script>
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
     $(function () {
         layui.use(['layer', 'layuimini', 'echarts', 'element'], function () {
@@ -193,7 +194,7 @@
             //判断是否是第一次打开本页面
             var isFirst = true;
             //连接websocket
-            var ws = new WebSocket("ws://127.0.0.1:7000/ObjectCloud/ComCenter/serverResumeWS");
+            var ws = new WebSocket(WS_ZUUL_URL+"/ComCenter/serverResumeWS");
             // var ws = new WebSocket("ws://127.0.0.1:7303/componentWS");
             ws.onopen = function () {
                 console.log('web socket已连接');
@@ -322,7 +323,7 @@
                     shadeClose: true,
                     shade: false,
                     area:['100%','100%'],
-                    content:"./serverdetail.html"
+                    content:"./serverdetail.html?ip="+$(this).attr("ip")
                 });
                 layer.full(serverDetail);
             });
