@@ -22,36 +22,26 @@
         height: 200px;
     }
 </style>
-<fieldset class='layui-elem-field layui-field-title'>
-    <legend>实例运行时监控</legend>
+
 
     <div class="layui-fluid" id="LAY-component-grid-mobile">
-        <div class="layui-row layui-col-space10" id="cpuDataContainer">
-
-        </div>
-        <div class="layui-row layui-col-space10" id="diskDataContainer">
-        </div>
-        <div class="layui-row layui-col-space10">
-
-            <div class="layui-col-xs6">
-                <!-- 填充内容 -->
-                <div class="layui-card">
-                    <div class="layui-card-header"></div>
-                    <div class="layui-card-body">
-
-                    </div>
-                </div>
+        <fieldset class='layui-elem-field layui-field-title'>
+            <legend>Cpu运行时监控(Cpu Runtime)</legend>
+            <div class="layui-row layui-col-space10" id="cpuDataContainer" style="margin-top: 17px">
             </div>
-            <div class="layui-col-xs6">
-                <div class="layui-card">
-                    <div class="layui-card-header"></div>
-                    <div class="layui-card-body"></div>
-                </div>
+        </fieldset>
+        <fieldset class='layui-elem-field layui-field-title'>
+            <legend>硬盘运行时监控(Disk Runtime)</legend>
+            <div class="layui-row layui-col-space10" id="diskDataContainer" style="margin-top: 17px">
             </div>
+        </fieldset>
+        <fieldset class='layui-elem-field layui-field-title'>
+            <legend>内存运行时监控(Memory Runtime)</legend>
+            <div class="layui-row layui-col-space10" id="memDataContainer" style="margin-top: 17px">
 
-        </div>
+            </div>
+        </fieldset>
     </div>
-</fieldset>
 <script src="../lib/layui-v2.5.4/layui.js"></script>
 <script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
 <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
@@ -106,7 +96,6 @@
             //渲染Echarts
 
             $.each(cpuRuntimeData, function (index, cpu) {
-                console.log(cpu);
                 var cpuTime = [];
                 var cpuUserUsed = [];
                 var cpuSystemUsed = [];
@@ -155,6 +144,7 @@
                     ],
                     yAxis: [
                         {
+                            max:100,
                             type: 'value'
                         }
                     ],
@@ -184,7 +174,7 @@
             });
             /***************************************************************************************************************/
             /*******************************************************硬盘*****************************************************/
-                //服务器硬盘数据指标
+            //服务器硬盘数据指标
             var DiskRuntimeData;
             //硬盘渲染
             var diskHtmlStr = "";
@@ -224,7 +214,6 @@
             //渲染Echarts
 
             $.each(diskRuntimeData, function (index, disk) {
-                console.log(disk);
                 var diskTime = [];
                 var diskReadRate = [];
                 var diskWriteRate = [];
@@ -276,6 +265,147 @@
 
                 echartsRecords.setOption(option);
             });
+            /***************************************************************************************************************/
+            /*******************************************************内存*****************************************************/
+            //服务器内存数据指标
+            var memRuntimeData;
+            //硬盘渲染
+            var memHtmlStr = "<div class=\"layui-col-xs6\">\n" +
+                "                <!-- 填充内容 -->\n" +
+                "                <div class=\"layui-card\" >\n" +
+                "                    <div class=\"layui-card-header\">内存使用状况(%)</div>\n" +
+                "                    <div class=\"layui-card-body\">\n" +
+                "                        <div id=\"mem-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                "                    </div>\n" +
+                "                </div>\n" +
+                "            </div>\n" +
+                "            <div class=\"layui-col-xs6\">\n" +
+                "                <div class=\"layui-card\">\n" +
+                "                    <div class=\"layui-card-header\">虚拟(swap)内存使用状况(%)</div>\n" +
+                "                    <div class=\"layui-card-body\">\n" +
+                "                        <div id=\"swap-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                "                    </div>\n" +
+                "                </div>\n" +
+                "            </div>";
+            $("#memDataContainer").html(memHtmlStr);
+            //默认请求30分钟的数据，可调
+            $.ajax({
+                url: ZUUL_URL + "/ComCenter/CC/server/runtimeMemRecord/" + serverIp + "/" + 30,
+                type: 'GET',
+                async: false,
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function (data) {
+                    memRuntimeData = data.data;
+                },
+                error: function (e) {
+                    layuimini.msg_error('网络错误');
+                }
+            });
+
+            //渲染Echarts
+            var memTime = [];
+            var memUsedPercent = [];
+            var swapUsedPercent = [];
+            var echartsRecordsMem = echarts.init(document.getElementById('mem-records'), 'light');
+            var echartsRecordsSwap = echarts.init(document.getElementById('swap-records'), 'light');
+            $.each(memRuntimeData, function (index, mem) {
+                memTime.push(mem.recordTime);
+                memUsedPercent.push(mem.memUsedPercent.toFixed(2));
+                swapUsedPercent.push((mem.swapUsedPercent*100).toFixed(2));
+            });
+            var memOption =
+                {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
+                            label: {
+                                backgroundColor: '#6a7985'
+                            }
+                        }
+                    },
+                    splitLine: {    //网格线
+                        lineStyle: {
+                            type: 'dashed'    //设置网格线类型 dotted：虚线   solid:实线
+                        },
+                        show: true //隐藏或显示
+                    },
+                    toolbox: {
+                        feature: {
+                            saveAsImage: {}
+                        }
+                    },
+                    xAxis: [
+                        {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: memTime
+                        }
+                    ],
+                    grid: {
+                        top: '3%',
+                        left: '1%',
+                        right: '3%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    yAxis: [
+                        {
+                            //设置最大值为100
+                            max:100,
+                            type: 'value'
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '内存使用率(%)',
+                            type: 'line',
+                            stack: '内存使用率(%)',
+                            areaStyle: {},
+                            data: memUsedPercent
+                        }
+                    ]
+                };
+            var swapOption =
+                {
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: memTime
+                        }
+                    ],
+                    grid: {
+                        top: '3%',
+                        left: '1%',
+                        right: '3%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    yAxis: [
+                        {
+                            max:100,
+                            type: 'value'
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '虚拟(swap)内存使用率(%)',
+                            type: 'line',
+                            stack: '虚拟(swap)使用率(%)',
+                            areaStyle: {},
+                            data: swapUsedPercent
+                        }
+                    ]
+                };
+            echartsRecordsMem.setOption(memOption);
+            echartsRecordsSwap.setOption(swapOption);
             /***************************************************************************************************************/
 //echarts自适应
 

@@ -262,7 +262,7 @@
                             $("#onlineStatus" + legalIdFilter).html('离线');
                         }
                         var cpuUsedPercent = serverResume.cpuUsedPercent * 100;
-                        var memUsedPercent = serverResume.memUsedPercent * 100;
+                        var memUsedPercent = serverResume.memUsedPercent;
                         var diskUsedPercent = serverResume.diskUsedPercent;
                         //保留两位小数
                         cpuUsedPercent = cpuUsedPercent.toFixed(2);
@@ -270,7 +270,7 @@
                         diskUsedPercent = diskUsedPercent.toFixed(2);
                         //渲染进度条
                         element.progress('cpu' + legalIdFilter, serverResume.cpuUsedPercent * 100 + '%');
-                        element.progress('mem' + legalIdFilter, serverResume.memUsedPercent * 100 + '%');
+                        element.progress('mem' + legalIdFilter, serverResume.memUsedPercent + '%');
                         element.progress('disk' + legalIdFilter, serverResume.diskUsedPercent + '%');
                         //渲染数字
                         $("#cpu" + legalIdFilter).attr('lay-percent', cpuUsedPercent + '%');
@@ -293,7 +293,7 @@
                         }
                         var legalIdFilter = serverResume.serverIp.replace(/\./g, "_");
                         var cpuUsedPercent = serverResume.cpuUsedPercent * 100;
-                        var memUsedPercent = serverResume.memUsedPercent * 100;
+                        var memUsedPercent = serverResume.memUsedPercent;
                         var diskUsedPercent = serverResume.diskUsedPercent;
                         //保留两位小数
                         cpuUsedPercent = cpuUsedPercent.toFixed(2);
@@ -301,7 +301,7 @@
                         diskUsedPercent = diskUsedPercent.toFixed(2);
                         //渲染进度条
                         element.progress('cpu' + legalIdFilter, serverResume.cpuUsedPercent * 100 + '%');
-                        element.progress('mem' + legalIdFilter, serverResume.memUsedPercent * 100 + '%');
+                        element.progress('mem' + legalIdFilter, serverResume.memUsedPercent + '%');
                         element.progress('disk' + legalIdFilter, serverResume.diskUsedPercent + '%');
                         //渲染数字
                         $("#cpu" + legalIdFilter).attr('lay-percent', cpuUsedPercent + '%');
