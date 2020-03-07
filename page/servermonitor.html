@@ -177,12 +177,13 @@
 <script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
     $(function () {
-        layui.use(['layer', 'layuimini', 'echarts', 'element'], function () {
+        layui.use(['layer', 'layuimini', 'echarts', 'element','form'], function () {
             var $ = layui.jquery,
                 layer = layui.layer,
                 layuimini = layui.layuimini,
                 echarts = layui.echarts,
-                element = layui.element;
+                element = layui.element,
+                form = layui.form;
 
             var load = layer.open({
                 type: 3,
@@ -317,7 +318,7 @@
             };
             $(document).on("click", ".layui-col-md3.serverResume", function () {
                 var serverDetail = layer.open({
-                    title:'Runtime Info',
+                    title:'当前运行时快照(Runtime Info) ',
                     type: 2,
                     maxmin:true,
                     shadeClose: true,
