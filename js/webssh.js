@@ -7,7 +7,7 @@ WSSHClient.prototype._generateEndpoint = function () {
     } else {
         var protocol = 'ws://';
     }
-    var endpoint = protocol + window.location.host + '/webSSHWS';
+    var endpoint = WS_ZUUL_URL + '/ComCenter/webSSHWS';
     return endpoint;
 };
 
@@ -16,12 +16,10 @@ WSSHClient.prototype.connect = function (options) {
     var base64 = new Base64();
 
     if (window.WebSocket) {
+        //如果支持websocket
         this._connection = new WebSocket(endpoint);
-    }
-    else if (window.MozWebSocket) {
-        this._connection = MozWebSocket(endpoint);
-    }
-    else {
+    }else {
+        //否则报错
         options.onError('WebSocket Not Supported');
         return;
     }
@@ -32,7 +30,19 @@ WSSHClient.prototype.connect = function (options) {
 
     this._connection.onmessage = function (evt) {
         var data = evt.data.toString();
+        var jsonData;
+        if(isJson(data)){
+           jsonData = JSON.parse(data);
+        }
+
+        if(jsonData!=null&&jsonData.code!=null&&jsonData.code==='-1001'){
+            //如果返回了错误代码,说明用户名或密码错误
+            alert(jsonData.message);
+            window.close();
+            return;
+        }
         data = base64.decode(data);
+        //回调
         options.onData(data);
     };
 
@@ -47,20 +57,13 @@ WSSHClient.prototype.send = function (data) {
 };
 
 WSSHClient.prototype.sendInitData = function (options) {
-    var data = {
-        hostname: options.host,
-        port: options.port,
-        username: options.username,
-        ispwd: options.ispwd,
-        secret: options.secret
-    };
     //连接参数
-    this._connection.send(JSON.stringify({"tp": "init", "data": options}))
+    this._connection.send(JSON.stringify(options));
 }
 
 WSSHClient.prototype.sendClientData = function (data) {
     //发送指令
-    this._connection.send(JSON.stringify({"tp": "client", "data": data}))
+    this._connection.send(JSON.stringify({"operate": "command", "command": data}))
 }
 
 var client = new WSSHClient();

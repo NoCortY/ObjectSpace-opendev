@@ -12,4 +12,22 @@ function getUrlParam(name) {
     var r = window.location.search.substr(1).match(reg);  //匹配目标参数
     if (r != null) return unescape(r[2]); return null; //返回参数值
 }
+
+/**
+ * 判定是否是JSON
+ * @param $string
+ * @returns {boolean}
+ */
+function isJson($string)
+{
+    try {
+        if(typeof JSON.parse($string) == 'object')
+            return true;
+        return false;
+    } catch (e) {
+        console.log(e);
+        return false;
+
+    }
+}
 /**********************************************方法区**********************************************/

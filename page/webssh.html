@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+    <title>WebSSH</title>
     <link rel="stylesheet" href="../css/xterm.css" />
 </head>
 <body>
@@ -8,56 +9,29 @@
 
 <script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
 <script src="../js/xterm.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script src="../js/webssh.js" charset="utf-8"></script>
 <script src="../js/base64.js" charset="utf-8"></script>
 <script>
-
-
     openTerminal( {
+        operate:'connect',
         host: '192.168.43.90',
         port: '22',
         username: 'root',
-        ispwd: $("input[name=ispwd]:checked").val(),
-        secret: 'NoCortY971103.'
+        password: 'NoCortY971103'
         /*host: $("#host").val(),
         port: $("#port").val(),
         username: $("#username").val(),
         ispwd: $("input[name=ispwd]:checked").val(),
         secret: $("#secret").val()*/
     });
-    //设置账号密码
-    function connect() {
-        var remember = $("#remember").is(":checked")
-        var options = {
-            host: '192.168.43.90',
-            port: '22',
-            username: 'root',
-            ispwd: $("input[name=ispwd]:checked").val(),
-            secret: 'NoCortY971103.'
-            /*host: $("#host").val(),
-            port: $("#port").val(),
-            username: $("#username").val(),
-            ispwd: $("input[name=ispwd]:checked").val(),
-            secret: $("#secret").val()*/
-        }
-        if (remember) {
-            store(options)
-        }
-        if (check()) {
-            openTerminal(options)
-        } else {
-            for (var key in validResult) {
-                if (!validResult[key]) {
-                    alert(errorMsg[key]);
-                    break;
-                }
-            }
-        }
-    }
+
+
+
     function openTerminal(options){
         var client = new WSSHClient();
         var term = new Terminal({
-            cols: 92,
+            cols: 97,
             rows: 37,
             cursorBlink: true, // 光标闪烁
             cursorStyle: "block", // 光标样式  null | 'block' | 'underline' | 'bar'
