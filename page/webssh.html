@@ -13,12 +13,11 @@
 <script src="../js/webssh.js" charset="utf-8"></script>
 <script src="../js/base64.js" charset="utf-8"></script>
 <script>
+    //获取ssh连接
+    var host = getUrlParam('host');
     openTerminal( {
         operate:'connect',
-        host: '192.168.43.90',
-        port: '22',
-        username: 'root',
-        password: 'NoCortY971103'
+        host: host
         /*host: $("#host").val(),
         port: $("#port").val(),
         username: $("#username").val(),
@@ -32,7 +31,7 @@
         var client = new WSSHClient();
         var term = new Terminal({
             cols: 97,
-            rows: 37,
+            rows: 32,
             cursorBlink: true, // 光标闪烁
             cursorStyle: "block", // 光标样式  null | 'block' | 'underline' | 'bar'
             scrollback: 800, //回滚

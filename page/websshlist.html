@@ -25,8 +25,9 @@
 
         <table class="layui-hide" id="serverSSHList" lay-filter="serverSSH"></table>
         <script type="text/html" id="currentTableBar">
-            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="edit"><span><i class="fa fa-terminal" aria-hidden="true"></i>SSH连接</span></a>
-            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="delete">编辑终端信息</a>
+            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="sshConnect"><span><i class="fa fa-terminal"
+                                                                                        aria-hidden="true"></i>SSH连接</span></a>
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="editSSHInfo">编辑终端信息</a>
         </script>
     </div>
 </div>
@@ -38,9 +39,9 @@
             form = layui.form,
             table = layui.table;
 
-        table.render({
+        var sshList = table.render({
             elem: '#serverSSHList',
-            url: ZUUL_URL+'/ComCenter/CC/server/serverSSHList',
+            url: ZUUL_URL + '/ComCenter/CC/server/serverSSHList',
             skin: 'line',
             limits: [10, 15, 20, 25, 50, 100],
             limit: 15,
@@ -50,34 +51,110 @@
                 {field: 'serverIp', width: 130, title: '服务器Ip'},
                 {field: 'serverOsType', width: 150, title: '操作系统'},
                 {field: 'serverOsVersion', width: 260, title: '版本'},
-                {field: 'serverStatus',width:190,title:'当前服务器状态',sort:true},
-                {field: 'serverDesc',width:190,title:'备注'},
+                {field: 'serverStatus', width: 190, title: '当前服务器状态', sort: true},
+                {field: 'serverDesc', width: 190, title: '备注'},
                 {title: '操作', minWidth: 50, templet: '#currentTableBar', fixed: "right", align: "center"}
             ]],
-            parseData:function(res){
-                return{
-                    "code":res.code,
-                    "msg":res.message,
-                    "data":res.data,
-                    "count":res.count
+            parseData: function (res) {
+                return {
+                    "code": res.code,
+                    "msg": res.message,
+                    "data": res.data,
+                    "count": res.count
                 }
             },
-            response:{
+            response: {
                 //规定返回成功的状态码为1001
                 statusCode: 1001
             }
         });
 
 
-
         table.on('tool(serverSSH)', function (obj) {
             var data = obj.data;
-            if (obj.event === 'edit') {
-                layer.alert('编辑行：<br>' + JSON.stringify(data))
-            } else if (obj.event === 'delete') {
-                layer.confirm('真的删除行么', function (index) {
-                    obj.del();
-                    layer.close(index);
+            if (obj.event === 'sshConnect') {
+                var sshWindow = layer.open({
+                    title:'终端:'+data.serverIp+'(WebSSH) ',
+                    type: 2,
+                    maxmin:true,
+                    shadeClose: true,
+                    shade: false,
+                    area:['100%','100%'],
+                    content:"./webssh.html?host="+data.serverIp
+                });
+                layer.full(sshWindow);
+            } else if (obj.event === 'editSSHInfo') {
+                var serverIp = data.serverIp;
+                var cloudServer = {};
+                cloudServer.serverIp = serverIp;
+                var editLayer = layer.open({
+                    type: 1,
+                    title: 'SSH信息修改',
+                    area: ['450px', '570px'],
+                    btn:['确定','关闭'],
+                    yes:function(index,layero){
+                        cloudServer.sshUser = $("#sshUser").val();
+                        cloudServer.sshPassword = $("#sshPassword").val();
+                        cloudServer.sshPort = $("#sshPort").val();
+                        cloudServer.serverDesc = $("#serverDesc").val();
+                        $.ajax({
+                            url:ZUUL_URL+"/ComCenter/CC/server/sshInfoUpdate",
+                            type:'post',
+                            xhrFields:{
+                                withCredentials:true
+                            },
+                            contentType: 'application/json',
+                            dataType: 'json',
+                            data:JSON.stringify(cloudServer),
+                            success:function(data){
+                                if(data.code!=REQUEST_SUCCESS){
+                                    layer.msg("修改失败,请稍后再试");
+                                    layer.close(editLayer);
+                                }else{
+                                    layer.close(editLayer);
+                                    layer.msg("修改成功!");
+                                    sshList.reload();
+                                }
+                            }
+                        });
+                    },
+                    content: '<div class="layui-fluid" style="margin-top: 20px">' +
+                                '<fieldset class="layui-elem-field layuimini-search">\n' +
+                                '            <legend>账户信息更改</legend>\n' +
+                                '            <div style="margin: 10px 10px 10px 10px;text-align: center">\n' +
+                                '                修改SSH连接信息，请输入正确的用户名和密码' +
+                                '            </div><br>\n' +
+                                '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                                '        <label class="layui-form-label">服务器IP:</label>\n' +
+                                '        <div class="layui-input-block">\n' +
+                                '            <input type="text" id="serverIp" autocomplete="off" class="layui-input"  value="'+serverIp+'" disabled>\n' +
+                                '        </div>\n' +
+                                '    </div>' +
+                                '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                                '        <label class="layui-form-label">登录用户名:</label>\n' +
+                                '        <div class="layui-input-block">\n' +
+                                '            <input type="text" id="sshUser" lay-verify="required|number"  autocomplete="off" placeholder="请输入用户名" class="layui-input">\n' +
+                                '        </div>\n' +
+                                '    </div>' +
+                                '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                                '        <label class="layui-form-label">SSH端口号:</label>\n' +
+                                '        <div class="layui-input-block">\n' +
+                                '            <input type="text"  lay-verify="required|number" id="sshPort" autocomplete="off" placeholder="请输入终端SSH端口" class="layui-input">\n' +
+                                '        </div>\n' +
+                                '    </div>' +'    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                                '        <label class="layui-form-label">密码:</label>\n' +
+                                '        <div class="layui-input-block">\n' +
+                                '            <input type="password" lay-verify="required|number" id="sshPassword" autocomplete="off" placeholder="请输入密码" class="layui-input">\n' +
+                                '        </div>\n' +
+                                '    </div>' +
+                                '<div class="layui-form-item layui-form-text" style="margin-right: 15px">\n' +
+                                '                <label class="layui-form-label">备注:</label>\n' +
+                                '                <div class="layui-input-block">\n' +
+                                '                    <textarea placeholder="备注" id="serverDesc" class="layui-textarea"></textarea>\n' +
+                                '                </div>\n' +
+                                '            </div>' +
+                                '</fieldset>' +
+                            '</div>'
                 });
             }
         });
