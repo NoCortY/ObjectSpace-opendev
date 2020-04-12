@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sftp-文件互传</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+
+        <fieldset class="layui-elem-field layuimini-search">
+            <legend>SFTP-文件互传</legend>
+            <div style="margin: 10px 10px 10px 10px;text-align: center">
+                这里可以非常方便地让您直接通过图形界面操作您linux服务器上的文件。<br>
+                但是，这需要您先设置终端的有关信息，以便于我们获取终端的连接会话。<br>
+                我们承诺将这些信息加密存储。<br>
+                <b>注:目前仅支持linux终端连接。</b><br>
+            </div>
+        </fieldset>
+        <table class="layui-hide" id="serverSFTPList" lay-filter="serverSFTP"></table>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="sftpConnect"><span><i class="fa fa-terminal"
+                                                                                              aria-hidden="true"></i>SFTP连接</span></a>
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="editSFTPInfo">编辑终端信息</a>
+        </script>
+    </div>
+</div>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
+<script>
+    layui.use(['form', 'table','element'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table;
+
+        var sshList = table.render({
+            elem: '#serverSFTPList',
+            url: ZUUL_URL + '/ComCenter/CC/server/serverSSHList',
+            skin: 'line',
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            cellMinWidth: 80,
+            cols: [[
+                {field: 'serverIp', width: 130, title: '服务器Ip'},
+                {field: 'serverOsType', width: 150, title: '操作系统'},
+                {field: 'serverOsVersion', width: 260, title: '版本'},
+                {field: 'serverStatus', width: 190, title: '当前服务器状态', sort: true},
+                {field: 'serverDesc', width: 190, title: '备注'},
+                {title: '操作', minWidth: 50, templet: '#currentTableBar', fixed: "right", align: "center"}
+            ]],
+            parseData: function (res) {
+                return {
+                    "code": res.code,
+                    "msg": res.message,
+                    "data": res.data,
+                    "count": res.count
+                }
+            },
+            response: {
+                //规定返回成功的状态码为1001
+                statusCode: 1001
+            }
+        });
+
+
+        table.on('tool(serverSFTP)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'sftpConnect') {
+                var sftpWindow = layer.open({
+                    title:'终端:'+data.serverIp+'(WebSFTP) ',
+                    type: 2,
+                    maxmin:true,
+                    shadeClose: true,
+                    shade: false,
+                    area:['100%','100%'],
+                    content:"./sftp.html?host="+data.serverIp
+                });
+                layer.full(sftpWindow);
+            } else if (obj.event === 'editSFTPInfo') {
+                var serverIp = data.serverIp;
+                var cloudServer = {};
+                cloudServer.serverIp = serverIp;
+                var editLayer = layer.open({
+                    type: 1,
+                    title: 'SSH信息修改',
+                    area: ['450px', '570px'],
+                    btn:['确定','关闭'],
+                    yes:function(index,layero){
+                        cloudServer.sshUser = $("#sshUser").val();
+                        cloudServer.sshPassword = $("#sshPassword").val();
+                        cloudServer.sshPort = $("#sshPort").val();
+                        cloudServer.serverDesc = $("#serverDesc").val();
+                        $.ajax({
+                            url:ZUUL_URL+"/ComCenter/CC/server/sshInfoUpdate",
+                            type:'post',
+                            xhrFields:{
+                                withCredentials:true
+                            },
+                            contentType: 'application/json',
+                            dataType: 'json',
+                            data:JSON.stringify(cloudServer),
+                            success:function(data){
+                                if(data.code!=REQUEST_SUCCESS){
+                                    layer.msg("修改失败,请稍后再试");
+                                    layer.close(editLayer);
+                                }else{
+                                    layer.close(editLayer);
+                                    layer.msg("修改成功!");
+                                    sshList.reload();
+                                }
+                            }
+                        });
+                    },
+                    content: '<div class="layui-fluid" style="margin-top: 20px">' +
+                        '<fieldset class="layui-elem-field layuimini-search">\n' +
+                        '            <legend>账户信息更改</legend>\n' +
+                        '            <div style="margin: 10px 10px 10px 10px;text-align: center">\n' +
+                        '                修改SFTP连接信息，请输入正确的用户名和密码' +
+                        '            </div><br>\n' +
+                        '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">服务器IP:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="text" id="serverIp" autocomplete="off" class="layui-input"  value="'+serverIp+'" disabled>\n' +
+                        '        </div>\n' +
+                        '    </div>' +
+                        '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">登录用户名:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="text" id="sshUser" lay-verify="required|number"  autocomplete="off" placeholder="请输入用户名" class="layui-input">\n' +
+                        '        </div>\n' +
+                        '    </div>' +
+                        '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">SFTP端口号:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="text"  lay-verify="required|number" id="sshPort" autocomplete="off" placeholder="请输入终端SFTP端口" class="layui-input">\n' +
+                        '        </div>\n' +
+                        '    </div>' +'    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">密码:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="password" lay-verify="required|number" id="sshPassword" autocomplete="off" placeholder="请输入密码" class="layui-input">\n' +
+                        '        </div>\n' +
+                        '    </div>' +
+                        '<div class="layui-form-item layui-form-text" style="margin-right: 15px">\n' +
+                        '                <label class="layui-form-label">备注:</label>\n' +
+                        '                <div class="layui-input-block">\n' +
+                        '                    <textarea placeholder="备注" id="serverDesc" class="layui-textarea"></textarea>\n' +
+                        '                </div>\n' +
+                        '            </div>' +
+                        '</fieldset>' +
+                        '</div>'
+                });
+            }
+        });
+
+    });
+</script>
+<script>
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sftp-文件互传</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <span id="pathNav" class="layui-breadcrumb" lay-separator="/">
+          <a href="#">根目录(/)</a>
+
+        </span>
+
+        <table class="layui-hide" id="sftpFileTable" lay-filter="sftpFileTable"></table>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="sshConnect"><span><i class="fa fa-terminal"
+                                                                                              aria-hidden="true"></i>删除</span></a>
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="editSSHInfo">编辑终端信息</a>
+        </script>
+        <script type="text/html" id="fileName">
+            <a href="#" id="enterDir" class="layui-table-link" data-filetype={{d.type}}>{{d.fileName}}</a>
+        </script>
+    </div>
+</div>
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
+<script>
+    $(function() {
+        layui.use(['form', 'table', 'element'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element;
+            var host = getUrlParam('host');
+            //alert(host);
+            var sshList = table.render({
+                elem: '#sftpFileTable',
+                url: ZUUL_URL + '/ComCenter/CC/server/ls',
+                skin: 'line',
+                cellMinWidth: 80,
+                cols: [[
+                    {field: 'type', title: '文件类型'},
+                    {field: 'fileName', title: '文件名', sort: true, templet: '#fileName'},
+                    {field: 'power', title: '权限'},
+                    {field: 'linkOrDirNum', title: '链接/子目录数量'},
+                    {field: 'userName', title: '所属用户'},
+                    {field: 'groupName', title: '所属组'},
+                    {field: 'size', title: '文件大小'},
+                    {field: 'lastModify', title: '最后修改时间'},
+                    {title: '操作', width: 300, templet: '#currentTableBar', fixed: "right", align: "center"}
+                ]],
+                parseData: function (res) {
+                    return {
+                        "code": res.code,
+                        "msg": res.message,
+                        "data": res.data,
+                        "count": res.count
+                    }
+                },
+                response: {
+                    //规定返回成功的状态码为1001
+                    statusCode: 1001
+                },
+                where:{
+                    path:"/",
+                    serverIp:host
+                }
+
+            });
+            var path = [];
+            $(document).on('click', '#enterDir', function () {
+                var fileType = $(this).data("filetype");
+                if("d"===fileType){
+                    path.push($(this).html());
+                    var queryPath = "/";
+                    var htmlStr = "<a href='#'>根目录(/)</a>\n";
+                    $.each(path,function(index,item){
+                        htmlStr+="<a href='#'>"+item+"</a>\n";
+                        queryPath+=item+"/";
+                    });
+                    table.reload('sftpFileTable',{
+                        where:{
+                            //设置异步数据接口的额外参数
+                           path:queryPath,
+                           serverIp:host
+                        },
+                        page:{
+                            curr:1
+                        }
+                    });
+                    //前端页面渲染
+
+                    $("#pathNav").html(htmlStr);
+                    element.render('breadcrumb');
+                }else{
+                    layer.msg("非文件夹无法进入");
+                }
+            });
+        });
+
+    });
+</script>
+<script>
+
+</script>
+
+</body>
+</html>
