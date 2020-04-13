@@ -7,21 +7,36 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
     <link rel="stylesheet" href="../css/public.css" media="all">
 </head>
 <body>
 <div class="layuimini-container">
     <div class="layuimini-main">
         <span id="pathNav" class="layui-breadcrumb" lay-separator="/">
-          <a href="#">根目录(/)</a>
+          <a href="#" data-index="0">根目录(/)</a>
 
         </span>
-
+        <button id="uploadFile"
+                class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 15px">
+            <i class="layui-icon layui-icon-upload"></i>上传文件
+        </button>
+        <button id="mkdir"
+                class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
+            <i class="layui-icon layui-icon-upload"></i>新建文件夹
+        </button>
+        <button id="touch"
+                class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
+            <i class="layui-icon layui-icon-upload"></i>新建空白文件
+        </button>
+        <button id="refresh"
+                class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
+            <i class="fa fa-refresh"></i>
+        </button>
         <table class="layui-hide" id="sftpFileTable" lay-filter="sftpFileTable"></table>
         <script type="text/html" id="currentTableBar">
-            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="sshConnect"><span><i class="fa fa-terminal"
-                                                                                              aria-hidden="true"></i>删除</span></a>
-            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="editSSHInfo">编辑终端信息</a>
+            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="remove"><span>删除</span></a>
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="download">下载</a>
         </script>
         <script type="text/html" id="fileName">
             <a href="#" id="enterDir" class="layui-table-link" data-filetype={{d.type}}>{{d.fileName}}</a>
@@ -33,18 +48,29 @@
 <script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
     $(function() {
-        layui.use(['form', 'table', 'element'], function () {
+        layui.use(['form', 'table', 'element','upload'], function () {
             var $ = layui.jquery,
                 form = layui.form,
                 table = layui.table,
-                element = layui.element;
+                element = layui.element,
+                upload = layui.upload;
+
+            layui.$.support.cors = true; //允许ajax跨域
+            // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性
+            $.ajaxSetup({
+                // 发送cookie
+                xhrFields: {
+                    withCredentials: true
+                }
+            });
             var host = getUrlParam('host');
             //alert(host);
-            var sshList = table.render({
+            var sftpFileTable = table.render({
                 elem: '#sftpFileTable',
                 url: ZUUL_URL + '/ComCenter/CC/server/ls',
                 skin: 'line',
                 cellMinWidth: 80,
+                page:false,
                 cols: [[
                     {field: 'type', title: '文件类型'},
                     {field: 'fileName', title: '文件名', sort: true, templet: '#fileName'},
@@ -52,9 +78,9 @@
                     {field: 'linkOrDirNum', title: '链接/子目录数量'},
                     {field: 'userName', title: '所属用户'},
                     {field: 'groupName', title: '所属组'},
-                    {field: 'size', title: '文件大小'},
+                    {field: 'size', title: '文件大小(Byte)'},
                     {field: 'lastModify', title: '最后修改时间'},
-                    {title: '操作', width: 300, templet: '#currentTableBar', fixed: "right", align: "center"}
+                    {title: '操作', width: 170, templet: '#currentTableBar', fixed: "right", align: "center"}
                 ]],
                 parseData: function (res) {
                     return {
@@ -74,7 +100,36 @@
                 }
 
             });
+            /*==================================================================路径相关==================================================================*/
             var path = [];
+            $(document).on('click','#pathNav>a',function(){
+               //路径面包屑点击事件
+                //alert($(this).data("index"));
+                var tempPath = [];
+                var indexSize = $(this).data("index");
+                for(var i=0;i<indexSize;i++){
+                    tempPath.push(path[i]);
+                }
+                path = tempPath;
+                var queryPath = "/";
+                var htmlStr = "<a href='#'>根目录(/)</a>\n";
+                $.each(path,function(index,item){
+                    var indexNum = index+1;
+                    htmlStr+="<a href='#' data-index="+indexNum+">"+item+"</a>\n";
+                    queryPath+=item+"/";
+                });
+                table.reload('sftpFileTable',{
+                    where:{
+                        //设置异步数据接口的额外参数
+                        path:queryPath,
+                        serverIp:host
+                    }
+                });
+                //前端页面渲染
+
+                $("#pathNav").html(htmlStr);
+                element.render('breadcrumb');
+            });
             $(document).on('click', '#enterDir', function () {
                 var fileType = $(this).data("filetype");
                 if("d"===fileType){
@@ -82,7 +137,8 @@
                     var queryPath = "/";
                     var htmlStr = "<a href='#'>根目录(/)</a>\n";
                     $.each(path,function(index,item){
-                        htmlStr+="<a href='#'>"+item+"</a>\n";
+                        var indexNum = index+1;
+                        htmlStr+="<a href='#' data-index="+indexNum+">"+item+"</a>\n";
                         queryPath+=item+"/";
                     });
                     table.reload('sftpFileTable',{
@@ -90,9 +146,6 @@
                             //设置异步数据接口的额外参数
                            path:queryPath,
                            serverIp:host
-                        },
-                        page:{
-                            curr:1
                         }
                     });
                     //前端页面渲染
@@ -103,8 +156,150 @@
                     layer.msg("非文件夹无法进入");
                 }
             });
-        });
+            /*==================================================================上传相关==================================================================*/
 
+            var uploadPath = "/";
+            var msglayer;
+            var uploadInst = upload.render({
+                elem:'#uploadFile',
+                accept:'file',
+                url: ZUUL_URL + '/ComCenter/CC/server/uploadFile/'+host,
+                field:'uploadFile',
+                before:function(obj){
+                    $.each(path,function(index,item){
+                        uploadPath+=item+"/";
+                    });
+                    this.data = {
+                       uploadPath:uploadPath
+                    }
+                },
+                progress: function(n){
+                    msglayer = layer.msg('<p>文件正在上传中...</p><div class="layui-progress layui-progress-big" lay-showPercent="yes" lay-filter="demo">\n' +
+                        '  <div class="layui-progress-bar layui-bg-green" lay-percent="0%"></div>\n' +
+                        '</div>',{
+                        time: 60000
+                    });
+                    var percent = n + '%' //获取进度百分比
+                    element.progress('demo', percent); //可配合 layui 进度条元素使用
+                },
+                done:function(res){
+                    //上传完毕回调
+                    layer.close(msglayer);
+                    layer.msg(res.message);
+                    table.reload('sftpFileTable',{
+                        where:{
+                            //设置异步数据接口的额外参数
+                            path:uploadPath,
+                            serverIp:host
+                        }
+                    });
+                    uploadPath = "/"
+                },
+                error:function(){
+                    layer.msg("网络异常!");
+                }
+            });
+            /*==================================================================表格toolbar相关==================================================================*/
+            table.on('tool(sftpFileTable)', function (obj) {
+                var data = obj.data;
+                var filePath = "/";
+                $.each(path,function(index,item){
+                    filePath+=item+"/";
+                });
+                if (obj.event === 'remove') {
+                    if("d"===data.type){
+                        var notice = layer.open({
+                            title:'确定要删除吗?',
+                            icon:2,
+                            content: '注意：您要删除的是一个文件夹，确认目录内不存在有效文件吗?'
+                            ,btn: ['确定', '取消']
+                            ,yes: function(index, layero){
+                                $.ajax({
+                                    type:'post',
+                                    url:ZUUL_URL + '/ComCenter/CC/server/removeDir/'+host,
+                                    data:{'filePath':filePath,'fileName':data.fileName},
+                                    success:function (data) {
+                                        if(data.code==="1001"){
+                                            layer.msg("删除成功");
+                                            //重载表格
+                                            table.reload('sftpFileTable',{
+                                                where:{
+                                                    //设置异步数据接口的额外参数
+                                                    path:filePath,
+                                                    serverIp:host
+                                                }
+                                            });
+                                        }else{
+                                            layer.msg("删除失败");
+                                        }
+                                    }
+                                });
+                            }
+                            ,btn2: function(index, layero){
+                                notice.close;
+                            }
+                        });
+                    }else if("d"===data.type||"-"===data.type){
+                        var notice = layer.open({
+                            title:'提示',
+                            icon:2,
+                            content: '确定要删除吗?<br>注意：此操作不可逆!'
+                            ,btn: ['确定', '取消']
+                            ,yes: function(index, layero){
+                                $.ajax({
+                                    type:'post',
+                                    url:ZUUL_URL + '/ComCenter/CC/server/removeFile/'+host,
+                                    data:{'filePath':filePath,'fileName':data.fileName},
+                                    success:function (data) {
+                                        if(data.code==="1001"){
+                                            layer.msg("删除成功");
+                                            //重载表格
+                                            table.reload('sftpFileTable',{
+                                                where:{
+                                                    //设置异步数据接口的额外参数
+                                                    path:filePath,
+                                                    serverIp:host
+                                                }
+                                            });
+                                        }else{
+                                            layer.msg("删除失败");
+                                        }
+                                    }
+                                });
+                            }
+                            ,btn2: function(index, layero){
+                                notice.close;
+                            }
+                        });
+                    }else{
+                        layer.msg("该文件为核心文件，暂不支持删除")
+                    }
+
+                }else if(obj.event==='download'){
+                    var downLoadPath = "/";
+                    $.each(path,function(index,item){
+                        downLoadPath+=item+"/";
+                    });
+                    //下载逻辑
+                    window.location.href=ZUUL_URL + '/ComCenter/CC/server/downloadFile/'+host+'/'+data.fileName+'?downloadPath='+downLoadPath;
+                }
+            });
+            /*==================================================================刷新相关==================================================================*/
+            $("#refresh").on('click',function () {
+                var filePath = "/";
+                $.each(path,function(index,item){
+                    filePath+=item+"/";
+                });
+                //刷新table即可
+                table.reload('sftpFileTable',{
+                    where:{
+                        //设置异步数据接口的额外参数
+                        path:filePath,
+                        serverIp:host
+                    }
+                });
+            });
+        });
     });
 </script>
 <script>
