@@ -23,19 +23,20 @@
         </button>
         <button id="mkdir"
                 class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
-            <i class="layui-icon layui-icon-upload"></i>新建文件夹
+            <i class="layui-icon layui-icon-tabs"></i>新建文件夹
         </button>
-        <button id="touch"
+        <!--<button id="touch"
                 class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
-            <i class="layui-icon layui-icon-upload"></i>新建空白文件
-        </button>
+            <i class="layui-icon layui-icon-file"></i>新建空白文件
+        </button>-->
         <button id="refresh"
                 class="layui-btn layui-btn-sm layui-btn-normal" style="margin-left: 5px">
             <i class="fa fa-refresh"></i>
         </button>
         <table class="layui-hide" id="sftpFileTable" lay-filter="sftpFileTable"></table>
         <script type="text/html" id="currentTableBar">
-            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="remove"><span>删除</span></a>
+            <a class="layui-btn layui-btn-xs" lay-event="remove"><span>删除</span></a>
+            <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="power">权限</a>
             <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="download">下载</a>
         </script>
         <script type="text/html" id="fileName">
@@ -202,10 +203,7 @@
             /*==================================================================表格toolbar相关==================================================================*/
             table.on('tool(sftpFileTable)', function (obj) {
                 var data = obj.data;
-                var filePath = "/";
-                $.each(path,function(index,item){
-                    filePath+=item+"/";
-                });
+                var filePath = getPath();
                 if (obj.event === 'remove') {
                     if("d"===data.type){
                         var notice = layer.open({
@@ -264,14 +262,15 @@
                                         }else{
                                             layer.msg("删除失败");
                                         }
+                                        layer.close(notice);
                                     }
                                 });
                             }
                             ,btn2: function(index, layero){
-                                notice.close;
+                                layer.close(notice);
                             }
                         });
-                    }else{
+                    } else{
                         layer.msg("该文件为核心文件，暂不支持删除")
                     }
 
@@ -282,14 +281,120 @@
                     });
                     //下载逻辑
                     window.location.href=ZUUL_URL + '/ComCenter/CC/server/downloadFile/'+host+'/'+data.fileName+'?downloadPath='+downLoadPath;
+                }else if(obj.event==='power'){
+                    var powerLayer = layer.open({
+                        title:'权限修改',
+                        area:['400px','270px'],
+                        btn:['确定','取消'],
+                        yes:function(index, layero){
+                            var owner = 0;
+                            var group = 0;
+                            var publik = 0;
+                            if($("#owner_r").prop('checked')){
+                                owner+=4;
+                            }
+                            if($("#owner_w").prop('checked')){
+                                owner+=2;
+                            }
+                            if($("#owner_x").prop('checked')){
+                                owner+=1;
+                            }
+                            if($("#group_r").prop('checked')){
+                                group+=4;
+                            }
+                            if($("#group_w").prop('checked')){
+                                group+=2;
+                            }
+                            if($("#group_x").prop('checked')){
+                                group+=1;
+                            }
+                            if($("#public_r").prop('checked')){
+                                publik+=4;
+                            }
+                            if($("#public_w").prop('checked')){
+                                publik+=2;
+                            }
+                            if($("#public_x").prop('checked')){
+                                publik+=1;
+                            }
+
+                            var permission = owner+""+group+""+publik+"";
+                            var filePath = getPath();
+                            var fileName = data.fileName;
+                            //alert(permission);
+                            $.ajax({
+                               type:'post',
+                               url:ZUUL_URL+'/ComCenter/CC/server/chmod/'+host,
+                               data:{'filePath':filePath,'fileName':fileName,'permission':permission},
+                               success:function (data) {
+                                   if(data.code==='1001'){
+                                       layer.msg("修改成功");
+                                       //重载表格
+                                       table.reload('sftpFileTable',{
+                                           where:{
+                                               //设置异步数据接口的额外参数
+                                               path:filePath,
+                                               serverIp:host
+                                           }
+                                       });
+                                   }else{
+                                       layer.msg("修改失败")
+                                   }
+                                   layer.close(powerLayer);
+                               },
+                               error:function(){
+                                   layer.msg("网络错误，请检查网络配置");
+                                   layer.close(powerLayer);
+                               }
+                            });
+                        },
+                        btn2:function(index, layero){
+                            layer.close(powerLayer);
+                        },
+                        success:function(index, layero){
+                            var permission = data.power;
+                            if(permission.charAt(0)!=='-') $("#owner_r").prop('checked','true');
+                            if(permission.charAt(1)!=='-') $("#owner_w").prop('checked','true');
+                            if(permission.charAt(2)!=='-') $("#owner_x").prop('checked','true');
+                            if(permission.charAt(3)!=='-') $("#group_r").prop('checked','true');
+                            if(permission.charAt(4)!=='-') $("#group_w").prop('checked','true');
+                            if(permission.charAt(5)!=='-') $("#group_x").prop('checked','true');
+                            if(permission.charAt(6)!=='-') $("#public_r").prop('checked','true');
+                            if(permission.charAt(7)!=='-') $("#public_w").prop('checked','true');
+                            if(permission.charAt(8)!=='-') $("#public_x").prop('checked','true');
+                        },
+                        content:'<div class="layui-form-item layui-row layui-col-space10">\n' +
+                            '    <div class="layui-col-md4" style="float: left">\n' +
+                            '        <fieldset >\n' +
+                            '            <legend>所有者</legend>\n' +
+                            '            <p><input type="checkbox" id="owner_r">读取</p>\n' +
+                            '            <p><input type="checkbox" id="owner_w">写入</p>\n' +
+                            '            <p><input type="checkbox" id="owner_x">执行</p>\n' +
+                            '        </fieldset>\n' +
+                            '    </div>\n' +
+                            '    <div class="layui-col-md4" style="float: left">\n' +
+                            '        <fieldset>\n' +
+                            '            <legend>用户组</legend>\n' +
+                            '            <p><input type="checkbox" id="group_r">读取</p>\n' +
+                            '            <p><input type="checkbox" id="group_w">写入</p>\n' +
+                            '            <p><input type="checkbox" id="group_x">执行</p>\n' +
+                            '        </fieldset>\n' +
+                            '    </div>\n' +
+                            '    <div class="layui-col-md4" style="float: left">\n' +
+                            '        <fieldset>\n' +
+                            '            <legend>公共</legend>\n' +
+                            '            <p><input type="checkbox" id="public_r">读取</p>\n' +
+                            '            <p><input type="checkbox" id="public_w">写入</p>\n' +
+                            '            <p><input type="checkbox" id="public_x">执行</p>\n' +
+                            '        </fieldset>\n' +
+                            '    </div>\n' +
+                            '</div>'
+                    });
                 }
             });
             /*==================================================================刷新相关==================================================================*/
             $("#refresh").on('click',function () {
-                var filePath = "/";
-                $.each(path,function(index,item){
-                    filePath+=item+"/";
-                });
+                var filePath = getPath();
                 //刷新table即可
                 table.reload('sftpFileTable',{
                     where:{
@@ -299,6 +404,108 @@
                     }
                 });
             });
+            /*==================================================================新建相关==================================================================*/
+            /*//新建文件
+            $("#touch").on('click',function(){
+                var filePath = getPath();
+                var fileLayer = layer.open({
+                    type: 1,
+                    title: '新建目录',
+                    area: ['400px', '200px'],
+                    btn:['确定','关闭'],
+                    yes:function(index,layero){
+                        $.ajax({
+                            type:'post',
+                            url:ZUUL_URL + '/ComCenter/CC/server/touch/'+host,
+                            data:{'filePath':filePath,'fileName':$("#file_name").val()},
+                            success:function (data) {
+                                if(data.code==='1001'){
+                                    layer.msg("新建文件成功");
+                                    table.reload('sftpFileTable',{
+                                        where:{
+                                            //设置异步数据接口的额外参数
+                                            path:filePath,
+                                            serverIp:host
+                                        }
+                                    });
+                                }else{
+                                    layer.msg("新建文件失败")
+                                }
+                                layer.close(fileLayer);
+                            },
+                            error:function(){
+                                layer.msg("新建失败,请检查网络");
+                            }
+                        });
+                    },
+                    btn2:function(index,layero){
+                        layer.close(fileLayer);
+                    },
+                    content: '<div class="layui-fluid" style="margin-top: 20px">'+
+                        '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">文件名:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="text" id="file_name" autocomplete="off" placeholder="请输入文件名" class="layui-input">\n' +
+                        '        </div>\n' +
+                        '    </div>' +
+                        '</div>'
+                });
+            });*/
+            //新建目录
+            $("#mkdir").on('click',function(){
+                var dirPath = getPath();
+                var dirLayer = layer.open({
+                    type: 1,
+                    title: '新建目录',
+                    area: ['400px', '200px'],
+                    btn:['确定','关闭'],
+                    yes:function(index,layero){
+                        $.ajax({
+                            type:'post',
+                            url:ZUUL_URL + '/ComCenter/CC/server/mkdir/'+host,
+                            data:{'filePath':dirPath,'dirName':$("#dirName").val()},
+                            success:function (data) {
+                                if(data.code==='1001'){
+                                    layer.msg("新建目录成功");
+                                    table.reload('sftpFileTable',{
+                                        where:{
+                                            //设置异步数据接口的额外参数
+                                            path:dirPath,
+                                            serverIp:host
+                                        }
+                                    });
+                                }else{
+                                    layer.msg("新建目录失败")
+                                }
+                                layer.close(dirLayer);
+                            },
+                            error:function(){
+                                layer.msg("新建失败,请检查网络");
+                            }
+                        });
+                    },
+                    btn2:function(index,layero){
+                      layer.close(dirLayer);
+                    },
+                    content: '<div class="layui-fluid" style="margin-top: 20px">'+
+                        '    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                        '        <label class="layui-form-label">目录名:</label>\n' +
+                        '        <div class="layui-input-block">\n' +
+                        '            <input type="text" id="dirName" autocomplete="off" placeholder="请输入目录名" class="layui-input">\n' +
+                        '        </div>\n' +
+                        '    </div>' +
+                        '</div>'
+                });
+            });
+            /*==================================================================公共函数==================================================================*/
+            function getPath(){
+                var basePath = "/";
+                $.each(path,function(index,item){
+                    basePath+=item+"/";
+                });
+                return basePath;
+            }
+
         });
     });
 </script>

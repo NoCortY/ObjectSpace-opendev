@@ -6,7 +6,32 @@
 </head>
 <body>
 
-<div id="showDiv" style="position: absolute; background-color: white; border: 1px solid black;"></div>
+<div class="layui-form-item layui-row layui-col-space10">
+    <div class="layui-col-md4" style="float: left">
+        <fieldset >
+            <legend>所有者</legend>
+            <p><input type="checkbox" id="owner_r">读取</p>
+            <p><input type="checkbox" id="owner_w">写入</p>
+            <p><input type="checkbox" id="owner_x">执行</p>
+        </fieldset>
+    </div>
+    <div class="layui-col-md4" style="float: left">
+        <fieldset>
+            <legend>用户组</legend>
+            <p><input type="checkbox" id="group_r">读取</p>
+            <p><input type="checkbox" id="group_w">写入</p>
+            <p><input type="checkbox" id="group_x">执行</p>
+        </fieldset>
+    </div>
+    <div class="layui-col-md4" style="float: left">
+        <fieldset>
+            <legend>公共</legend>
+            <p><input type="checkbox" id="public_r">读取</p>
+            <p><input type="checkbox" id="public_w">写入</p>
+            <p><input type="checkbox" id="public_x">执行</p>
+        </fieldset>
+    </div>
+</div>
 <script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
     <script src="../js/lay-config.js?v=1.0.4" charset="utf-8"></script>
     <script>
@@ -15,20 +40,7 @@
                 layer = layui.layer,
                 layuimini = layui.layuimini,
                 echarts = layui.echarts;
-            // 打开一个 web socket
-            var ws = new WebSocket("ws://127.0.0.1:7000/ObjectCloud/ComCenter/serverGeneralWS");
-           // var ws = new WebSocket("ws://127.0.0.1:7303/componentWS");
-            ws.onopen = function() {
-                // Web Socket 已连接上，使用 send() 方法发送数据
-                ws.send("测试发送");
-                console.log('open');
-            };
-            ws.onmessage = function (e) {
-                console.log('message', e.data);
-            };
-            ws.onclose = function() {
-                console.log('close');
-            };
+
         });
 </script>
 </body>
