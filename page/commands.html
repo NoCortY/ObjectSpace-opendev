@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>命令群发</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+</head>
+<body>
+<div class="layui-fluid" id="component-tabs">
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <div class="layui-tab">
+                        <ul class="layui-tab-title">
+                            <li class="layui-this">命令群发</li>
+                            <li>执行记录</li>
+                        </ul>
+                        <div class="layui-tab-content">
+                            <div class="layui-tab-item layui-show">
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>服务器IP:</b></label>
+                                        <div id="serverIpContainer" class="layui-input-block">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                    <div class="layui-form">
+                                        <div class="layui-form-item">
+                                            <label class="layui-form-label"><b>服务器IP:</b></label>
+                                            <div class="layui-btn-group ssh_tabs">
+                                                <button id="enterCommand" class="layui-btn">输入命令</button>
+                                                <button id="simpleCommand" class="layui-btn layui-btn-primary">常用命令</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-tab-item">内容2</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
+<script>
+    $(function() {
+            layui.use(['form', 'table', 'element', 'upload'], function () {
+                var $ = layui.jquery,
+                    form = layui.form,
+                    table = layui.table,
+                    element = layui.element,
+                    upload = layui.upload;
+
+                layui.$.support.cors = true; //允许ajax跨域
+                // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性
+                $.ajaxSetup({
+                    // 发送cookie
+                    xhrFields: {
+                        withCredentials: true
+                    }
+                });
+                $(".ssh_tabs>button").on('click',function(){
+                    $(this).attr('class','layui-btn');
+                    $(this).siblings("button").attr('class','layui-btn layui-btn-primary');
+                });
+                $.ajax({
+                   type:'get',
+                   url:ZUUL_URL + '/ComCenter/CC/server/serverSSHList?page=-1&limit=-1',
+                   success:function(data){
+                       var htmlStr = "";
+                       if(data.code==='1001'){
+                           $.each(data.data,function(index,item){
+                               htmlStr += '<input type="checkbox" namd="serverIP" lay-skin="primary" title="'+item.serverIp+'&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp备注：'+item.serverDesc+'"><br>'
+                           });
+                       }else{
+                           htmlStr+="获取服务器列表失败";
+                       }
+                       $("#serverIpContainer").html(htmlStr);
+                       form.render();
+                   },
+                   error:function(){
+                       var htmlStr = "服务器连接失败,请检查网络设置。";
+                       $("#serverIpContainer").html(htmlStr);
+                    }
+                });
+            });
+        });
+</script>
+</body>
+
+</html>
