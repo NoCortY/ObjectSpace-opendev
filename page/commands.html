@@ -28,10 +28,10 @@
         <div class="layui-col-md12">
             <div class="layui-card">
                 <div class="layui-card-body">
-                    <div class="layui-tab">
+                    <div class="layui-tab" lay-filter="commandGroup">
                         <ul class="layui-tab-title">
-                            <li class="layui-this">命令群发</li>
-                            <li>执行记录</li>
+                            <li id="commandGroupSend" class="layui-this">命令群发</li>
+                            <li id="commandExecuteRecord">执行记录</li>
                         </ul>
                         <div class="layui-tab-content">
                             <div class="layui-tab-item layui-show">
@@ -98,6 +98,8 @@
                         withCredentials: true
                     }
                 });
+                //判断此时是输入命令还是常用命令
+                var isEnterCommand = true;
                 //输入命令 常用命令 切换
                 $(".ssh_tabs>button").on('click',function(){
                     $(this).attr('class','layui-btn');
@@ -106,6 +108,7 @@
                 //点击输入命令更改样式
                 $("#enterCommand").on('click',function(){
                     $("#commandContainer").html("<textarea placeholder=\"命令\" id=\"command\" class=\"layui-textarea\"></textarea>");
+                    isEnterCommand = true;
                 });
                 //点击常用命令更改样式
                 $("#simpleCommand").on('click',function(){
@@ -123,6 +126,7 @@
                         page:false,
                         cols: [[
                             {field:'',type:'radio'},
+                            {field:'id',title:'id',hide:true},
                             {field: 'commandName', title: '命令名称', sort: true},
                             {field: 'commandContent', title: 'shell命令'},
                             {field: 'createUserName', title: '创建人'}
@@ -140,7 +144,53 @@
                             statusCode: 1001
                         }
                     });
+                    isEnterCommand = false;
+                });
 
+                //监听表格单选按钮
+                table.on('radio(simpleCommandTable)', function(obj){
+                    var data = obj.data;
+                    $("#deleteCommand").attr('class','layui-btn layui-btn-sm layui-btn-danger del_shell_layer');
+                    $("#deleteCommand").removeAttr('disabled')
+                    //console.log(obj.checked); //当前是否选中状态
+                    //console.log(obj.data); //选中行的相关数据
+
+                    //console.log(obj.type); //如果触发的是全选，则为：all，如果触发的是单选，则为：one
+                });
+                //监听删除命令按钮
+                $(document).on('click',"#deleteCommand",function(){
+                    //获取表格选中行的数据
+                    var checkStatus = table.checkStatus('simpleCommandTable');
+                    var commandId = checkStatus.data[0].id;
+                    var simpleCommandLayer = layer.open({
+                        type:0,
+                        title:'删除命令',
+                        btn:["确定","取消"],
+                        yes:function(index,layero){
+                            $.ajax({
+                                type:'post',
+                                url:ZUUL_URL + '/ComCenter/CC/server/removeSimpleCommand',
+                                data:{'commandId':commandId},
+                                success:function(data){
+                                    if(data.code==='1001'){
+                                        layer.msg('删除成功');
+                                        table.reload('simpleCommandTable');
+                                    }else{
+                                        layer.msg('删除失败');
+                                    }
+                                    layer.close(simpleCommandLayer);
+                                },
+                                error:function(){
+                                    layer.msg("删除失败，请检查网络");
+                                    layer.close(simpleCommandLayer);
+                                }
+                            });
+                        },
+                        cancel:function(index,layero){
+                            layer.close(simpleCommandLayer);
+                        },
+                        content:'确定要删除该命令吗？'
+                    });
                 });
 
                 //新增命令
@@ -190,8 +240,8 @@
 
                 //执行记录表
                 var executeCommandRecord = table.render({
-                    elem: '#simpleCommandTable',
-                    url: ZUUL_URL + '/ComCenter/CC/server/executeCommandRecord',
+                    elem: '#executeCommandRecord',
+                    url: ZUUL_URL + '/ComCenter/CC/server/serverCommandExecuteRecord',
                     skin: 'line',
                     cellMinWidth: 80,
                     page:false,
@@ -245,11 +295,24 @@
                         return;
                     }
                     //alert(ids);
+
+                    //需要发送的命令
+                    var sendCommandData;
+                    if(isEnterCommand){
+                        //如果是手动输入命令，那么发送的就是是我们手动输入的
+                        sendCommandData = $('#command').val();
+                    }else{
+                        //如果是常用命令，那么就需要看看选中的是哪一条
+                        var checkStatus = table.checkStatus('simpleCommandTable');
+                        var commandContent = checkStatus.data[0].commandContent;
+                        //将命令内容赋值
+                        sendCommandData = commandContent;
+                    }
                     var load = layer.load(2);
                     $.ajax({
                         type:'post',
                         url:ZUUL_URL + '/ComCenter/CC/server/commandGroup/',
-                        data:{'servers':JSON.stringify(ids),'command':$('#command').val()},
+                        data:{'servers':JSON.stringify(ids),'command':sendCommandData},
                         success:function(data){
                             layer.close(load);
                             if(data.code==='1001'){
@@ -282,6 +345,16 @@
                             layer.msg("连接失败，请检查网络")
                         }
                     });
+                });
+                //监听命令群发 执行记录 tab页切换
+                element.on('tab(commandGroup)',function(data){
+                    if(this.id==='commandExecuteRecord'){
+                        table.reload('executeCommandRecord');
+                    }
+                });
+                //重置按钮
+                $("#clear").on('click',function(){
+                   $("#command").val("");
                 });
                 /**获取选中的checkbox值*/
                 function getChecked(){
