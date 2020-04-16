@@ -9,6 +9,18 @@
     <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
     <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
     <link rel="stylesheet" href="../css/public.css" media="all">
+    <style>
+        .table_option {
+            padding: 10px;
+            border: 1px solid #ececec;
+            border-bottom: none;
+            margin-top: 20px;
+            margin-bottom: -10px;
+        }
+        .text-right {
+            text-align: right;
+        }
+    </style>
 </head>
 <body>
 <div class="layui-fluid" id="component-tabs">
@@ -31,21 +43,36 @@
                                         </div>
                                     </div>
                                 </div>
-                                    <div class="layui-form">
-                                        <div class="layui-form-item">
-                                            <label class="layui-form-label"><b>服务器IP:</b></label>
-                                            <div class="layui-btn-group ssh_tabs">
-                                                <button id="enterCommand" class="layui-btn">输入命令</button>
-                                                <button id="simpleCommand" class="layui-btn layui-btn-primary">常用命令</button>
-                                            </div>
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>SSH命令:</b></label>
+                                        <div class="layui-btn-group ssh_tabs">
+                                            <button id="enterCommand" class="layui-btn">输入命令</button>
+                                            <button id="simpleCommand" class="layui-btn layui-btn-primary">常用命令</button>
                                         </div>
                                     </div>
                                 </div>
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>输入命令:</b></label>
+                                        <div id="commandContainer" class="layui-input-block">
+                                            <textarea placeholder="请输入shell命令,不同命令之间使用分号分隔,例如:touch a;ls -l;" id="command" class="layui-textarea"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="layui-form-item">
+                                        <div class="layui-input-block">
+                                            <button id="sendCommand" class="layui-btn">执行命令</button>
+                                            <button id="clear" class="layui-btn layui-btn-primary">重置</button>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
-                            <div class="layui-tab-item">内容2</div>
+                            <div class="layui-tab-item">
+                                <table id="executeCommandRecord" lay-filter="executeCommandRecord"></table>
+                            </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -71,10 +98,124 @@
                         withCredentials: true
                     }
                 });
+                //输入命令 常用命令 切换
                 $(".ssh_tabs>button").on('click',function(){
                     $(this).attr('class','layui-btn');
                     $(this).siblings("button").attr('class','layui-btn layui-btn-primary');
                 });
+                //点击输入命令更改样式
+                $("#enterCommand").on('click',function(){
+                    $("#commandContainer").html("<textarea placeholder=\"命令\" id=\"command\" class=\"layui-textarea\"></textarea>");
+                });
+                //点击常用命令更改样式
+                $("#simpleCommand").on('click',function(){
+                    $("#commandContainer").html("" +
+                        "<div class=\"table_option text-right\">\n" +
+                        "    <button id='addCommand' class=\"layui-btn layui-btn-sm layui-btn-normal add_shell_layer\"><i class=\"layui-icon layui-icon-add-1\"></i><span>添加命令</span></button>\n" +
+                        "    <button id='deleteCommand' class=\"layui-btn layui-btn-sm layui-btn-danger del_shell_layer layui-btn-disabled\" disabled=\"disabled\"><i class=\"layui-icon layui-icon-delete\"></i><span>删除选中</span></button>\n" +
+                        "</div>" +
+                        "<table id='simpleCommandTable'  lay-filter='simpleCommandTable'></table>");
+                    //常用命令表
+                    var simpleCommandTable = table.render({
+                        elem: '#simpleCommandTable',
+                        url: ZUUL_URL + '/ComCenter/CC/server/simpleCommand',
+                        skin: 'line',
+                        page:false,
+                        cols: [[
+                            {field:'',type:'radio'},
+                            {field: 'commandName', title: '命令名称', sort: true},
+                            {field: 'commandContent', title: 'shell命令'},
+                            {field: 'createUserName', title: '创建人'}
+                        ]],
+                        parseData: function (res) {
+                            return {
+                                "code": res.code,
+                                "msg": res.message,
+                                "data": res.data,
+                                "count": res.count
+                            }
+                        },
+                        response: {
+                            //规定返回成功的状态码为1001
+                            statusCode: 1001
+                        }
+                    });
+
+                });
+
+                //新增命令
+                $(document).on('click','#addCommand',function(){
+                    var simpleCommandLayer = layer.open({
+                        type:0,
+                        title:'新增命令',
+                        area:['550px','300px'],
+                        btn:["确定","取消"],
+                        yes:function(index,layero){
+                            $.ajax({
+                                type:'post',
+                                url:ZUUL_URL + '/ComCenter/CC/server/addSimpleCommand',
+                                data:{'commandName':$("#commandName").val(),'commandContent':$("#commandContent").val()},
+                                success:function(data){
+                                    if(data.code==='1001'){
+                                        layer.msg('新增成功');
+                                        table.reload('simpleCommandTable');
+                                    }else{
+                                        layer.msg('新增失败');
+                                    }
+                                    layer.close(simpleCommandLayer);
+                                },
+                                error:function(){
+                                    layer.msg("新增失败，请检查网络");
+                                    layer.close(simpleCommandLayer);
+                                }
+                            });
+                        },
+                        cancel:function(index,layero){
+                            layer.close(simpleCommandLayer);
+                        },
+                        content:'    <div class="layui-form-item" style="margin-right: 15px">\n' +
+                            '        <label class="layui-form-label">命令名称:</label>\n' +
+                            '        <div class="layui-input-block">\n' +
+                            '            <input type="text" id="commandName"  autocomplete="off" placeholder="请输入命令名称" class="layui-input">\n' +
+                            '        </div>\n' +
+                            '    </div>' +
+                            '<div class="layui-form-item layui-form-text" style="margin-right: 15px">\n' +
+                            '                <label class="layui-form-label">命令内容:</label>\n' +
+                            '                <div class="layui-input-block">\n' +
+                            '                    <textarea placeholder="请输入shell命令,不同命令之间使用分号分隔。\n例如:touch a;ls -l;" id="commandContent" class="layui-textarea"></textarea>\n' +
+                            '                </div>\n' +
+                            '            </div>'
+                    });
+                });
+
+                //执行记录表
+                var executeCommandRecord = table.render({
+                    elem: '#simpleCommandTable',
+                    url: ZUUL_URL + '/ComCenter/CC/server/executeCommandRecord',
+                    skin: 'line',
+                    cellMinWidth: 80,
+                    page:false,
+                    cols: [[
+                        {field: 'serverIp', title: '服务器IP', sort: true},
+                        {field: 'command', title: 'shell命令'},
+                        {field: 'result', title: '执行反馈'},
+                        {field: 'executeUserName', title: '执行用户'},
+                        {field: 'executeDate', title: '执行时间', sort: true}
+                    ]],
+                    parseData: function (res) {
+                        return {
+                            "code": res.code,
+                            "msg": res.message,
+                            "data": res.data,
+                            "count": res.count
+                        }
+                    },
+                    response: {
+                        //规定返回成功的状态码为1001
+                        statusCode: 1001
+                    }
+                });
+                //获取可以发送命令的服务器
                 $.ajax({
                    type:'get',
                    url:ZUUL_URL + '/ComCenter/CC/server/serverSSHList?page=-1&limit=-1',
@@ -82,7 +223,7 @@
                        var htmlStr = "";
                        if(data.code==='1001'){
                            $.each(data.data,function(index,item){
-                               htmlStr += '<input type="checkbox" namd="serverIP" lay-skin="primary" title="'+item.serverIp+'&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp备注：'+item.serverDesc+'"><br>'
+                               htmlStr += '<input type="checkbox" name="serverIP" lay-skin="primary" data-ip="'+item.serverIp+'" title="'+item.serverIp+'&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp备注：'+item.serverDesc+'"><br>'
                            });
                        }else{
                            htmlStr+="获取服务器列表失败";
@@ -95,6 +236,62 @@
                        $("#serverIpContainer").html(htmlStr);
                     }
                 });
+
+                //发送命令
+                $("#sendCommand").on('click',function(){
+                    var ids = getChecked();
+                    if(ids.length===0){
+                        layer.msg("请至少选择一台服务器执行命令");
+                        return;
+                    }
+                    //alert(ids);
+                    var load = layer.load(2);
+                    $.ajax({
+                        type:'post',
+                        url:ZUUL_URL + '/ComCenter/CC/server/commandGroup/',
+                        data:{'servers':JSON.stringify(ids),'command':$('#command').val()},
+                        success:function(data){
+                            layer.close(load);
+                            if(data.code==='1001'){
+                                layer.open({
+                                    title:'命令执行反馈',
+                                    type:1,
+                                    area:['700px','500px'],
+                                    content:'<table id="excutedCommandReturn" lay-filter="excutedCommandReturn"></table>'
+                                });
+                                table.render({
+                                    elem:'#excutedCommandReturn',
+                                    height:410,
+                                    limit:data.count,
+                                    cols:[[
+                                        {field:'serverIp',title:'服务器IP'},
+                                        {field: 'command',title:'执行命令'},
+                                        {field:'result',title:'执行结果'}
+                                    ]],
+                                    data:data.data,
+                                    success:function(){
+                                        layer.msg("命令执行成功");
+                                    }
+                                });
+                            }else{
+                                layer.msg("命令执行失败");
+                                layer.close(load);
+                            }
+                        },
+                        error:function(){
+                            layer.msg("连接失败，请检查网络")
+                        }
+                    });
+                });
+                /**获取选中的checkbox值*/
+                function getChecked(){
+                    var ids = [];
+                    $("input:checkbox[name='serverIP']:checked").each(function(index,item){
+                        //alert(index);
+                        ids.push($(this).data('ip'));
+                    });
+                    return ids;
+                };
             });
         });
 </script>
