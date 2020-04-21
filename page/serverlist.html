@@ -99,11 +99,11 @@
                                             <div class="panel layui-bg-number">
                                                 <div class="panel-body">
                                                     <div class="panel-title">
-                                                        <span class="label pull-right layui-bg-green">实时</span>
+                                                        <span class="label pull-right layui-bg-green">快照</span>
                                                         <h5>正常运行</h5>
                                                     </div>
                                                     <div class="panel-content">
-                                                        <h1 class="no-margins layui-green">1234</h1>
+                                                        <h1 class="no-margins layui-green" id="normal">null</h1>
                                                         <small>正常运行服务器数量</small>
                                                     </div>
                                                 </div>
@@ -113,11 +113,11 @@
                                             <div class="panel layui-bg-number">
                                                 <div class="panel-body">
                                                     <div class="panel-title">
-                                                        <span class="label pull-right layui-bg-orange">实时</span>
+                                                        <span class="label pull-right layui-bg-orange">快照</span>
                                                         <h5>高负载</h5>
                                                     </div>
                                                     <div class="panel-content">
-                                                        <h1 class="no-margins layui-orange">1234</h1>
+                                                        <h1 class="no-margins layui-orange" id="high">null</h1>
                                                         <small>当前高负载服务器数量</small>
                                                     </div>
                                                 </div>
@@ -127,11 +127,11 @@
                                             <div class="panel layui-bg-number">
                                                 <div class="panel-body">
                                                     <div class="panel-title">
-                                                        <span class="label pull-right layui-bg-red">实时</span>
+                                                        <span class="label pull-right layui-bg-red">快照</span>
                                                         <h5>停机</h5>
                                                     </div>
                                                     <div class="panel-content">
-                                                        <h1 class="no-margins layui-red">1234</h1>
+                                                        <h1 class="no-margins layui-red" id="down">null</h1>
                                                         <small>宕机数量</small>
                                                     </div>
                                                 </div>
@@ -217,6 +217,18 @@
         });
 
         function init(){
+            $.ajax({
+               url:ZUUL_URL+'/ComCenter/CC/server/serverSimpleStatus',
+                type:'get',
+                xhrFields:{
+                    withCredentials:true
+                },
+                success:function(data){
+                   $("#normal").html(data.data.normalCount);
+                   $("#high").html(data.data.highOverload);
+                   $("#down").html(data.data.down);
+                }
+            });
             table.render({
                 elem: '#serverListTable'
                 ,url:ZUUL_URL+'/ComCenter/CC/server/listMyselfServer'

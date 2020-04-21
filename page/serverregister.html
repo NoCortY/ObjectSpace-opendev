@@ -16,51 +16,10 @@
             <legend>服务器注册</legend>
         </fieldset>
 
-        <div class="layui-form" action="#" lay-filter="example">
-            <div class="layui-form-item">
-                <label class="layui-form-label">服务器名</label>
-                <div class="layui-input-block">
-                    <input type="text" id="serverName" autocomplete="off" placeholder="请输入服务器名   (例如：A应用服务器、Redis缓存服务器)" class="layui-input">
-                </div>
-            </div>
-            <div class="layui-form-item">
-                <label class="layui-form-label">服务器IP</label>
-                <div class="layui-input-block">
-                    <input type="text" id="serverIp" autocomplete="off" placeholder="请输入服务器IP" class="layui-input">
-                </div>
-            </div>
-
-            <div class="layui-form-item">
-                <label class="layui-form-label">域</label>
-                <div class="layui-input-block">
-                    <select id="land" >
-                        <option value=""></option>
-                        <option value="true">生产域</option>
-                        <option value="false">测试域</option>
-                    </select>
-                </div>
-            </div>
-
-
-            <div class="layui-form-item">
-                <label class="layui-form-label">监控</label>
-                <div class="layui-input-block">
-                        <input type="checkbox" id="monitor" lay-skin="switch" lay-text="是|否">
-                </div>
-            </div>
-            <div class="layui-form-item layui-form-text">
-                <label class="layui-form-label">用途和描述</label>
-                <div class="layui-input-block">
-                    <textarea placeholder="请输入用途和描述。（例如：本服务器用于生产环境下Redis集群节点的的部署。开启端口号xxxx...）" class="layui-textarea" id="desc"></textarea>
-                </div>
-            </div>
-
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button class="layui-btn" id="register" >立即提交</button>
-                </div>
-            </div>
-        </div>
+        <b>您只需要在您需要托管的服务器的Shell中输入如下指令，即可完成注册:</b><br>
+        <blockquote class="layui-elem-quote" style="margin-top: 10px;">
+            <div id="installCommand"></div>
+        </blockquote>
     </div>
 </div>
 <script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
@@ -75,51 +34,19 @@
             , laydate = layui.laydate;
 
 
-        //创建一个编辑器
-        //var editIndex = layedit.build('LAY_demo_editor');
-
-
-
-
-
-        $("#register").on('click',function(){
-            var ipRep = /((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}/g
-            if(!(ipRep.test($("#serverIp").val()))){
-                layer.msg("请输入正确的IP地址");
-            }else {
-                var cloudServer = {};
-                cloudServer.serverName = $("#serverName").val();
-                cloudServer.serverIp = $("#serverIp").val();
-                cloudServer.land = $("#land").val();
-                if($("#monitor").val()==="on"){
-                    cloudServer.monitor=true;
-                }else{
-                    cloudServer.monitor=false;
-                }
-                cloudServer.serverDesc = $("#desc").val();
-                $.ajax({
-                    url: ZUUL_URL + '/ComCenter/CC/server/register',
-                    type: 'post',
-                    dataType: 'json',
-                    contentType: 'application/json',
-                    xhrFields: {
-                        withCredentials: true
-                    },
-                    data: JSON.stringify(cloudServer),
-                    success: function (data) {
-                        layer.msg(data.message);
-                    },
-                    error: function () {
-                        layer.msg("网络错误");
-                    }
-                });
+        $.ajax({
+            url: ZUUL_URL + '/ComCenter/CC/server/register',
+            type: 'post',
+            xhrFields: {
+                withCredentials: true
+            },
+            success: function (data) {
+                $("#installCommand").html(data.data);
+            },
+            error: function () {
+                layer.msg("网络错误");
             }
         });
-
-
-
-
-
     });
 </script>
 

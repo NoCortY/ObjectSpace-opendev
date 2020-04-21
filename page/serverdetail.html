@@ -29,10 +29,10 @@
                 在线时长(TimeKeeping)
             </div>
             <div class="layui-card-body layuiadmin-card-list">
-                <p class="layuiadmin-big-font">9,999,666</p>
+                <p class="layuiadmin-big-font" id="timekeeping">获取中</p>
                 <p>
                     当前状态
-                    <span class="layuiadmin-span-color">88万 <i
+                    <span class="layuiadmin-span-color">正常<i
                             class="layui-inline layui-icon layui-icon-flag"></i></span>
                 </p>
             </div>
@@ -44,11 +44,11 @@
                 内存(Memory)
             </div>
             <div class="layui-card-body layuiadmin-card-list">
-                <p class="layuiadmin-big-font">33,555</p>
+                <p class="layuiadmin-big-font" id="memory">获取中</p>
                 <p>
-                    内存大小
-                    <span class="layuiadmin-span-color">10% <i
-                            class="layui-inline layui-icon layui-icon-face-smile-b"></i></span>
+                    单位
+                    <span class="layuiadmin-span-color">MB <i
+                            class="layui-inline layui-icon layui-icon-flag"></i></span>
                 </p>
             </div>
         </div>
@@ -60,11 +60,11 @@
             </div>
             <div class="layui-card-body layuiadmin-card-list">
 
-                <p class="layuiadmin-big-font">999,666</p>
+                <p class="layuiadmin-big-font" id="disk">获取中</p>
                 <p>
-                    总大小
-                    <span class="layuiadmin-span-color">*** <i
-                            class="layui-inline layui-icon layui-icon-dollar"></i></span>
+                    单位
+                    <span class="layuiadmin-span-color">GB <i
+                            class="layui-inline layui-icon layui-icon-flag"></i></span>
                 </p>
             </div>
         </div>
@@ -76,11 +76,11 @@
             </div>
             <div class="layui-card-body layuiadmin-card-list">
 
-                <p class="layuiadmin-big-font">66,666</p>
+                <p class="layuiadmin-big-font" id="lastHeartBeat">获取中</p>
                 <p>
-                    最近一个月
-                    <span class="layuiadmin-span-color">15% <i
-                            class="layui-inline layui-icon layui-icon-user"></i></span>
+                    日期
+                    <span class="layuiadmin-span-color" id="lastHeartBeatDate"> <i
+                            class="layui-inline layui-icon layui-icon-flag"></i></span>
                 </p>
             </div>
         </div>
@@ -131,6 +131,22 @@
                 type: 3,
                 shade: 0.1,
                 content: "快照正在生成中..."
+            });
+            /*******************************************************简信*****************************************************/
+            $.ajax({
+               url: ZUUL_URL + "/ComCenter/CC/server/serverSimpleSnapshot/" + serverIp,
+                type:'get',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success:function(data){
+                   $("#timekeeping").html(data.data.timeKeeping);
+                   $("#memory").html(data.data.memory.toFixed(2));
+                   $("#disk").html(data.data.disk.toFixed(2));
+                   $("#lastHeartBeatDate").html(data.data.lastHeartBeat.split(" ")[0]+"<i\n" +
+                       "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
+                   $("#lastHeartBeat").html(data.data.lastHeartBeat.split(" ")[1]);
+                }
             });
             /*******************************************************CPU*****************************************************/
                 //服务器cpu数据指标
