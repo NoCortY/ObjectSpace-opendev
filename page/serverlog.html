@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>服务器日志</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+    <style>
+        .table_option {
+            padding: 10px;
+            border: 1px solid #ececec;
+            border-bottom: none;
+            margin-top: 20px;
+            margin-bottom: -10px;
+        }
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid" id="component-tabs">
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <div class="layui-tab" lay-filter="commandGroup">
+                        <ul class="layui-tab-title">
+                            <li id="commandGroupSend" class="layui-this">服务器日志</li>
+                        </ul>
+                        <div class="layui-tab-content">
+                            <div class="layui-tab-item layui-show">
+
+                                <table id="serverLog" lay-filter="serverLog"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
+<script>
+    $(function() {
+        layui.use(['form', 'table', 'element', 'upload'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element,
+                upload = layui.upload;
+            layui.$.support.cors = true; //允许ajax跨域
+            // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性====
+            var acFailFlag = false;
+            $.ajaxSetup({
+                // 发送cookie
+                xhrFields: {
+                    withCredentials: true
+                },
+                statusCode: {
+                    401:function(response){
+                        if(!acFailFlag){
+                            acFailFlag=true;
+                            alert("证书已过期，请重新登录");
+                            window.location.href=AC_FAIL_HREF;
+                        }
+                    }
+                }
+            });
+            // ===================================================================
+
+
+
+
+
+            //服务器日志表
+            var executeCommandRecord = table.render({
+                elem: '#serverLog',
+                url: ZUUL_URL + '/ComCenter/CC/server/serverRuntimeRecord',
+                skin: 'line',
+                cellMinWidth: 80,
+                page:false,
+                cols: [[
+                    {field: 'recordTime', title: '时间', sort: true,width:200},
+                    {field: 'serverIp', title: '服务器IP', sort: true,width:150},
+                    {field: 'userEmail', title: '用户邮箱',width:130},
+                    {field: 'serverState', title: '服务器状态',width:100,templet:function(d){
+                        if(d.serverState===1){
+                            return '<span style="background-color: deepskyblue;color: white">上线</span>';
+                        }else{
+                            return '<span style="background-color: red;color: white">下线</span>';
+                        }
+                        }},
+                    {field: 'recordContent', title: '详细信息'}
+                ]],
+                parseData: function (res) {
+                    return {
+                        "code": res.code,
+                        "msg": res.message,
+                        "data": res.data,
+                        "count": res.count
+                    }
+                },
+                response: {
+                    //规定返回成功的状态码为1001
+                    statusCode: 1001
+                }
+            });
+
+        });
+    });
+</script>
+</body>
+
+</html>

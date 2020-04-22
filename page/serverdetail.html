@@ -32,7 +32,7 @@
                 <p class="layuiadmin-big-font" id="timekeeping">获取中</p>
                 <p>
                     当前状态
-                    <span class="layuiadmin-span-color">正常<i
+                    <span class="layuiadmin-span-color" id="serverStatus">正常<i
                             class="layui-inline layui-icon layui-icon-flag"></i></span>
                 </p>
             </div>
@@ -123,6 +123,24 @@
                 echarts = layui.echarts,
                 form = layui.form;
 
+            // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性====
+            var acFailFlag = false;
+            $.ajaxSetup({
+                // 发送cookie
+                xhrFields: {
+                    withCredentials: true
+                },
+                statusCode: {
+                    401:function(response){
+                        if(!acFailFlag){
+                            acFailFlag=true;
+                            alert("证书已过期，请重新登录");
+                            window.location.href=AC_FAIL_HREF;
+                        }
+                    }
+                }
+            });
+            // ===================================================================
             //获取需要获取指标的IP（从父页面传值）
             var serverIp = getUrlParam("ip");
             //存下当前页面所有的echarts对象
@@ -140,7 +158,13 @@
                     withCredentials: true
                 },
                 success:function(data){
-                   $("#timekeeping").html(data.data.timeKeeping);
+                   if(data.data.timeKeeping==null){
+                       $("#timekeeping").html("0 Min");
+                       $("#serverStatus").html("离线<i\n" +
+                           "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
+                   }else{
+                        $("#timekeeping").html(data.data.timeKeeping+" Min");
+                   }
                    $("#memory").html(data.data.memory.toFixed(2));
                    $("#disk").html(data.data.disk.toFixed(2));
                    $("#lastHeartBeatDate").html(data.data.lastHeartBeat.split(" ")[0]+"<i\n" +

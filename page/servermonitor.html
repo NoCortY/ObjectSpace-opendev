@@ -185,6 +185,24 @@
                 element = layui.element,
                 form = layui.form;
 
+            // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性====
+            var acFailFlag = false;
+            $.ajaxSetup({
+                // 发送cookie
+                xhrFields: {
+                    withCredentials: true
+                },
+                statusCode: {
+                    401:function(response){
+                        if(!acFailFlag){
+                            acFailFlag=true;
+                            alert("证书已过期，请重新登录");
+                            window.location.href=AC_FAIL_HREF;
+                        }
+                    }
+                }
+            });
+            // ===================================================================
             var load = layer.open({
                 type: 3,
                 shade: 0.1,
