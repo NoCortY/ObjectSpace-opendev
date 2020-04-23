@@ -1,10 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <title>计划任务</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+    <style>
+        .table_option {
+            padding: 10px;
+            border: 1px solid #ececec;
+            border-bottom: none;
+            margin-top: 20px;
+            margin-bottom: -10px;
+        }
+        .text-right {
+            text-align: right;
+        }
+        /*日期选择器去除秒**/
+        .layui-laydate-content>.layui-laydate-list {
+            padding-bottom: 0px;
+            overflow: hidden;
+        }
+        .layui-laydate-content>.layui-laydate-list>li{
+            width:50%
+        }
+
+        .merge-box .scrollbox .merge-list {
+            padding-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
+<div class="layui-fluid" id="component-tabs">
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <div class="layui-tab" lay-filter="taskTab">
+                        <ul class="layui-tab-title">
+                            <li id="addTask" class="layui-this">添加任务</li>
+                            <li id="taskTable">任务列表</li>
+                        </ul>
+                        <div class="layui-tab-content">
+                            <div class="layui-tab-item layui-show">
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>任务类型:</b></label>
+                                        <div class="layui-input-block">
+                                            <select id="taskType" lay-filter="taskType">
+                                                <option value="command">Shell命令</option>
+                                                <option value="script">Shell脚本</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>服务器IP:</b></label>
+                                        <div class="layui-input-block">
+                                            <select id="serverIp" lay-filter="serverIp">
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>任务名称:</b></label>
+                                        <div class="layui-input-block">
+                                            <input type="text" id="taskName" placeholder="请输入任务名称" class="layui-input">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <div class="layui-inline">
+                                        <label class="layui-form-label"><b>执行日期:</b></label>
+                                        <div class="layui-input-block">
+                                            <input type="text" id="executeDatetime" autocomplete="off" class="layui-input">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="layui-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label"><b>输入命令:</b></label>
+                                        <div id="commandContainer" class="layui-input-block">
+                                            <textarea placeholder="请输入shell命令,不同命令之间使用分号分隔,例如:touch a;ls -l;" id="command" class="layui-textarea"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="layui-form-item">
+                                        <div class="layui-input-block">
+                                            <button id="addFutureTask" class="layui-btn">添加任务</button>
+                                            <button id="clear" class="layui-btn layui-btn-primary">重置</button>
+                                        </div>
+                                    </div>
+                                </div>
 
+                            </div>
+                            <div class="layui-tab-item">
+                                <table id="futureTaskTable" lay-filter="futureTastTable"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../lib/jquery-3.4.1/jquery-3.4.1.min.js" charset="utf-8"></script>
+<script src="../lib/layui-v2.5.4/layui.js" charset="utf-8"></script>
+<script src="../js/ConstantPool.js" charset="utf-8"></script>
+<script>
+    $(function() {
+        layui.use(['form', 'table', 'element', 'upload','laydate'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                element = layui.element,
+                upload = layui.upload,
+                laydate = layui.laydate;
+            layui.$.support.cors = true; //允许ajax跨域
+            // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性====
+            var acFailFlag = false;
+            $.ajaxSetup({
+                // 发送cookie
+                xhrFields: {
+                    withCredentials: true
+                },
+                statusCode: {
+                    401:function(response){
+                        if(!acFailFlag){
+                            acFailFlag=true;
+                            alert("证书已过期，请重新登录");
+                            window.location.href=AC_FAIL_HREF;
+                        }
+                    }
+                }
+            });
+            // ===================================================================
+            var futureTastTable = table.render({
+                elem:'#futureTaskTable',
+                url:ZUUL_URL+'/ComCenter/CC/server/futureTask',
+                skin:'line',
+                page:true,
+                limit:[10,30,50],
+                cols:[[
+                    {field:'taskName',title:'任务名'},
+                    {field: 'shellScript',title:'命令类型',templet:function(d){
+                            if(d.shellScript===false){
+                                return '执行命令';
+                            }else{
+                                return '执行脚本';
+                            }
+                        }},
+                    {field:'shellScriptPath',title:'脚本路径'},
+                    {field:'shellCommand',title:'命令'},
+                    {field:'executeServerIp',title:'执行服务器'},
+                    {field:'executed',title:'执行结果',templet:function(d){
+                            if(d.executed===1){
+                                return '成功';
+                            }else if(d.executed===-1){
+                                return '<span style="background-color: red;color: white">失败</span>';;
+                            }else if(d.executed===0){
+                                return '未执行';
+                            }
+                        }},
+                    {field:'executeTime',title:'约定执行时间'},
+                    {field:'executedTime',title:'完成时间'},
+                    {field:'executedDesc',title:'详细信息'},
+                    {field:'executedResult',title:'服务器结果'},
+                    {field:'createUserName',title:'任务创建人'}
+                ]],
+                parseData: function (res) {
+                    return {
+                        "code": res.code,
+                        "msg": res.message,
+                        "data": res.data,
+                        "count": res.count
+                    }
+                },
+                response: {
+                    //规定返回成功的状态码为1001
+                    statusCode: 1001
+                }
+            });
+            //任务列表点击事件
+            element.on('tab(taskTab)',function(data){
+                if(this.id==='taskTable'){
+                    table.reload('futureTaskTable');
+                }
+            });
+            //日期时间选择器
+            laydate.render({
+                elem: '#executeDatetime'
+                ,type: 'datetime'
+                ,format:'yyyy-MM-dd HH:mm'
+                ,value:new Date()
+                ,min:0
+            });
+
+
+            //判断此时是shell命令还是shell脚本
+            form.on('select(taskType)',function(data){
+                if(data.value==='command'){
+                    $("#command").attr('placeholder','请输入shell命令,不同命令之间使用分号分隔,例如:touch a;ls -l;');
+                }else if(data.value==='script'){
+                    $("#command").attr('placeholder','请输入shell脚本路径，如:/usr/local/bin/startup.sh');
+                }
+            });
+
+            //服务器IP下拉框数据填充
+            $.ajax({
+                type:'get',
+                url:ZUUL_URL + '/ComCenter/CC/server/serverSSHList?page=-1&limit=-1',
+                success:function(data){
+                    var htmlStr = "";
+                    if(data.code==='1001'){
+                        $.each(data.data,function(index,item){
+                            htmlStr +="<option value="+item.serverIp+">"+item.serverIp+"  &nbsp&nbsp备注:"+item.serverDesc+"</option>"
+                        });
+                    }else{
+                        htmlStr+="获取服务器列表失败";
+                    }
+                    $("#serverIp").html(htmlStr);
+                    form.render('select');
+                },
+                error:function(){
+                    var htmlStr = "服务器连接失败,请检查网络设置。";
+                    $("#serverIp").html(htmlStr);
+                }
+            });
+
+            //点击添加任务
+            $("#addFutureTask").on('click',function(){
+                var futureTask = {};
+                futureTask.taskName = $("#taskName").val();
+                futureTask.isShellScript = $('#taskType option:selected').val()==='script';
+                if(futureTask.isShellScript===true){
+                    futureTask.shellScriptPath = $("#command").val();
+                }else{
+                    futureTask.shellCommand = $("#command").val();
+                }
+                futureTask.executeServerIp = $("#serverIp option:selected").val();
+                futureTask.executeTime = $("#executeDatetime").val();
+                $.ajax({
+                    url:ZUUL_URL + '/ComCenter/CC/server/futureTask',
+                    type:'post',
+                    data:JSON.stringify(futureTask),
+                    contentType:'application/json',
+                    success:function(data){
+                        if(data.code==='1001'){
+                            layer.msg("成功新增计划任务,执行时间为:"+futureTask.executeTime);
+                        }else{
+                            layer.msg("新增计划任务失败。");
+                        }
+                    },
+                    error:function(){
+                        layer.msg("新增计划任务失败，请检查网络!");
+                    }
+                });
+            });
+
+        });
+    });
+</script>
 </body>
+
 </html>
