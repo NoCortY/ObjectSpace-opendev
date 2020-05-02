@@ -9,6 +9,20 @@
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <link rel="stylesheet" href="../lib/layui-v2.5.4/css/layui.css" media="all">
     <link rel="stylesheet" href="../lib/layuiadmin/style/admin.css" media="all">
+    <style>
+        /*日期选择器去除秒**/
+        .layui-laydate-content>.layui-laydate-list {
+            padding-bottom: 0px;
+            overflow: hidden;
+        }
+        .layui-laydate-content>.layui-laydate-list>li{
+            width:50%
+        }
+
+        .merge-box .scrollbox .merge-list {
+            padding-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
 
@@ -86,10 +100,26 @@
         </div>
     </div>
 </div>
+<hr>
 <div class="layui-fluid" id="LAY-component-grid-mobile">
+    <div class="layui-form-item" style="text-align: center">
+        <div class="layui-inline">
+            <label class="layui-form-label"><b>查询时段:</b></label>
+            <div class="layui-input-block">
+                <input type="text" id="startDatetime" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-mid"><b>至</b></label>
+            <div class="layui-input-inline">
+                <input type="text" id="endDatetime" autocomplete="off" class="layui-input">
+            </div>
+            <button class="layui-btn layui-btn-normal" id="queryServerRuntimeDetail">查询</button>
+        </div>
+    </div>
     <fieldset class='layui-elem-field layui-field-title'>
         <legend>Cpu运行时监控(Cpu Runtime)</legend>
-        <div class="layui-row layui-col-space10" id="cpuDataContainer" style="margin-top: 17px">
+        <div class="layui-row layui-col-space10" id="cpuDataContainer" style="margin-top: 5px">
         </div>
     </fieldset>
     <fieldset class='layui-elem-field layui-field-title'>
@@ -116,12 +146,13 @@
 <script src="../js/ConstantPool.js" charset="utf-8"></script>
 <script>
     $(function () {
-        layui.use(['layuimini', 'element', 'layer', 'echarts', 'form'], function () {
+        layui.use(['layuimini', 'element', 'layer', 'echarts', 'form', 'laydate'], function () {
             var $ = layui.jquery,
                 element = layui.element,
                 layer = layui.layer,
                 echarts = layui.echarts,
-                form = layui.form;
+                form = layui.form,
+                laydate = layui.laydate;
 
             // 给ajax请求统一设置,这里设置以后下面所有的ajax请求中都会有设置中的属性====
             var acFailFlag = false;
@@ -131,14 +162,24 @@
                     withCredentials: true
                 },
                 statusCode: {
-                    401:function(response){
-                        if(!acFailFlag){
-                            acFailFlag=true;
+                    401: function (response) {
+                        if (!acFailFlag) {
+                            acFailFlag = true;
                             alert("证书已过期，请重新登录");
-                            window.location.href=AC_FAIL_HREF;
+                            window.location.href = AC_FAIL_HREF;
                         }
                     }
                 }
+            });
+
+            /**
+             * 查询
+             **/
+            $("#queryServerRuntimeDetail").on('click',function(){
+                var startDateTime = $("#startDatetime").val();
+                var endDateTime = $("#endDatetime").val();
+                var intervalTime = getMinutes(startDateTime,endDateTime);
+                echartsList = init(serverIp,intervalTime);
             });
             // ===================================================================
             //获取需要获取指标的IP（从父页面传值）
@@ -152,476 +193,30 @@
             });
             /*******************************************************简信*****************************************************/
             $.ajax({
-               url: ZUUL_URL + "/ComCenter/CC/server/serverSimpleSnapshot/" + serverIp,
-                type:'get',
-                xhrFields: {
-                    withCredentials: true
-                },
-                success:function(data){
-                   if(data.data.timeKeeping==null){
-                       $("#timekeeping").html("0 Min");
-                       $("#serverStatus").html("离线<i\n" +
-                           "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
-                   }else{
-                        $("#timekeeping").html(data.data.timeKeeping+" Min");
-                   }
-                   $("#memory").html(data.data.memory.toFixed(2));
-                   $("#disk").html(data.data.disk.toFixed(2));
-                   $("#lastHeartBeatDate").html(data.data.lastHeartBeat.split(" ")[0]+"<i\n" +
-                       "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
-                   $("#lastHeartBeat").html(data.data.lastHeartBeat.split(" ")[1]);
-                }
-            });
-            /*******************************************************CPU*****************************************************/
-                //服务器cpu数据指标
-            var cpuRuntimeData;
-            //CPU渲染
-            var cpuHtmlStr = "";
-            //默认请求30分钟的数据，可调
-            $.ajax({
-                url: ZUUL_URL + "/ComCenter/CC/server/runtimeCpuRecord/" + serverIp + "/" + 30,
-                type: 'GET',
-                async: false,
+                url: ZUUL_URL + "/ComCenter/CC/server/serverSimpleSnapshot/" + serverIp,
+                type: 'get',
                 xhrFields: {
                     withCredentials: true
                 },
                 success: function (data) {
-                    cpuRuntimeData = data.data;
-                },
-                error: function (e) {
-                    layuimini.msg_error('网络错误');
-                }
-            });
-            //渲染卡片
-            var cardLength = 12 / cpuRuntimeData.length;
-            if (cardLength < 3) {
-                //卡片长度最少为3
-                cardLength = 3;
-            }
-            $.each(cpuRuntimeData, function (index, cpu) {
-                cpuHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
-                    "            <div class=\"layui-card\">\n" +
-                    "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">CPU使用率——核心" + cpu.cpuId + "(%)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
-                    "                <div class=\"layui-card-body\">\n" +
-                    "                    <div id=\"cpu-records-" + cpu.cpuId + "\" style=\"width: 100%;min-height:200px\">Cpu波形图</div>\n" +
-                    "                </div>\n" +
-                    "            </div>\n" +
-                    "        </div>"
-            });
-            $("#cpuDataContainer").html(cpuHtmlStr);
-            //渲染Echarts
-
-            $.each(cpuRuntimeData, function (index, cpu) {
-                var cpuTime = [];
-                var cpuUserUsed = [];
-                var cpuSystemUsed = [];
-                var cpuCombine = [];
-                var echartsRecords = echarts.init(document.getElementById('cpu-records-' + cpu.cpuId), 'light');
-                $.each(cpu.cpuRecordDtoList, function (index, cpuCore) {
-                    cpuTime.push(cpuCore.recordTime);
-                    cpuUserUsed.push(cpuCore.userUsed.toFixed(2));
-                    cpuSystemUsed.push(cpuCore.systemUsed.toFixed(2));
-                    cpuCombine.push(cpuCore.combine.toFixed(2));
-                });
-                var option = {
-                    tooltip: {
-                        trigger: 'axis',
-                        axisPointer: {
-                            type: 'cross',
-                            label: {
-                                backgroundColor: '#6a7985'
-                            }
-                        }
-                    },
-                    splitLine: {    //网格线
-                        lineStyle: {
-                            type: 'dashed'    //设置网格线类型 dotted：虚线   solid:实线
-                        },
-                        show: true //隐藏或显示
-                    },
-                    toolbox: {
-                        feature: {
-                            saveAsImage: {}
-                        }
-                    },
-                    grid: {
-                        top: '3%',
-                        left: '1%',
-                        right: '3%',
-                        bottom: '3%',
-                        containLabel: true
-                    },
-                    xAxis: [
-                        {
-                            type: 'category',
-                            boundaryGap: false,
-                            data: cpuTime
-                        }
-                    ],
-                    yAxis: [
-                        {
-                            max: 100,
-                            type: 'value'
-                        }
-                    ],
-                    series: [
-                        {
-                            name: '总使用率(%)',
-                            type: 'line',
-                            stack: '总使用率',
-                            areaStyle: {},
-                            data: cpuCombine
-                        }, {
-                            name: '用户使用率(%)',
-                            type: 'line',
-                            stack: '用户使用率',
-                            areaStyle: {},
-                            data: cpuUserUsed
-                        }, {
-                            name: '系统使用率(%)',
-                            type: 'line',
-                            stack: '系统使用率',
-                            areaStyle: {},
-                            data: cpuSystemUsed
-                        }
-                    ]
-                };
-                echartsRecords.setOption(option);
-                echartsList.push(echartsRecords);
-            });
-            /***************************************************************************************************************/
-            /*******************************************************硬盘*****************************************************/
-                //服务器硬盘数据指标
-            var DiskRuntimeData;
-            //硬盘渲染
-            var diskHtmlStr = "";
-            //默认请求30分钟的数据，可调
-            $.ajax({
-                url: ZUUL_URL + "/ComCenter/CC/server/runtimeDiskRecord/" + serverIp + "/" + 30,
-                type: 'GET',
-                async: false,
-                xhrFields: {
-                    withCredentials: true
-                },
-                success: function (data) {
-                    diskRuntimeData = data.data;
-                },
-                error: function (e) {
-                    layuimini.msg_error('网络错误');
-                }
-            });
-            //渲染卡片
-            var cardLength = 12 / diskRuntimeData.length;
-            if (cardLength < 4) {
-                //卡片长度最少为4
-                cardLength = 4;
-            }
-            $.each(diskRuntimeData, function (index, disk) {
-                diskHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
-                    "            <div class=\"layui-card\">\n" +
-                    "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">硬盘读写状况——" + disk.diskName + "(MB/s)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
-                    "                <div class=\"layui-card-body\">\n" +
-                    "                    <div id=\"disk-records-" + disk.diskName + "\" style=\"width: 100%;min-height:200px\"></div>\n" +
-                    "                </div>\n" +
-                    "            </div>\n" +
-                    "        </div>"
-            });
-            $("#diskDataContainer").html(diskHtmlStr);
-
-            //渲染Echarts
-
-            $.each(diskRuntimeData, function (index, disk) {
-                var diskTime = [];
-                var diskReadRate = [];
-                var diskWriteRate = [];
-                var echartsRecords = echarts.init(document.getElementById('disk-records-' + disk.diskName), 'light');
-                $.each(disk.diskRecordDtoList, function (index, diskPartition) {
-                    diskTime.push(diskPartition.recordTime);
-                    diskReadRate.push((diskPartition.readRate).toFixed(2));
-                    diskWriteRate.push((diskPartition.writeRate).toFixed(2));
-                });
-                var option =
-                    {
-                        tooltip: {
-                            trigger: 'axis'
-                        },
-                        calculable: true,
-                        xAxis: [
-                            {
-                                type: 'category',
-                                boundaryGap: false,
-                                data: diskTime
-                            }
-                        ],
-                        grid: {
-                            top: '3%',
-                            left: '1%',
-                            right: '3%',
-                            bottom: '3%',
-                            containLabel: true
-                        },
-                        yAxis: [
-                            {
-                                type: 'value'
-                            }
-                        ],
-                        series: [
-                            {
-                                name: 'Read(MB/s)',
-                                type: 'line',
-                                stack: 'Read(MB/s)',
-                                data: diskReadRate
-                            }, {
-                                name: 'Write(MB/s)',
-                                type: 'line',
-                                stack: 'Write(MB/s)',
-                                data: diskWriteRate
-                            }
-                        ]
-                    };
-
-                echartsRecords.setOption(option);
-                echartsList.push(echartsRecords);
-            });
-            /***************************************************************************************************************/
-            /*******************************************************内存*****************************************************/
-                //服务器内存数据指标
-            var memRuntimeData;
-            //硬盘渲染
-            var memHtmlStr = "<div class=\"layui-col-xs6\">\n" +
-                "                <!-- 填充内容 -->\n" +
-                "                <div class=\"layui-card\" >\n" +
-                "                    <div class=\"layui-card-header\">内存使用状况(%)</div>\n" +
-                "                    <div class=\"layui-card-body\">\n" +
-                "                        <div id=\"mem-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
-                "                    </div>\n" +
-                "                </div>\n" +
-                "            </div>\n" +
-                "            <div class=\"layui-col-xs6\">\n" +
-                "                <div class=\"layui-card\">\n" +
-                "                    <div class=\"layui-card-header\">虚拟(swap)内存使用状况(%)</div>\n" +
-                "                    <div class=\"layui-card-body\">\n" +
-                "                        <div id=\"swap-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
-                "                    </div>\n" +
-                "                </div>\n" +
-                "            </div>";
-            $("#memDataContainer").html(memHtmlStr);
-            //默认请求30分钟的数据，可调
-            $.ajax({
-                url: ZUUL_URL + "/ComCenter/CC/server/runtimeMemRecord/" + serverIp + "/" + 30,
-                type: 'GET',
-                async: false,
-                xhrFields: {
-                    withCredentials: true
-                },
-                success: function (data) {
-                    memRuntimeData = data.data;
-                },
-                error: function (e) {
-                    layuimini.msg_error('网络错误');
+                    if (data.data.timeKeeping == null) {
+                        $("#timekeeping").html("0 Min");
+                        $("#serverStatus").html("离线<i\n" +
+                            "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
+                    } else {
+                        $("#timekeeping").html(data.data.timeKeeping + " Min");
+                    }
+                    $("#memory").html(data.data.memory.toFixed(2));
+                    $("#disk").html(data.data.disk.toFixed(2));
+                    $("#lastHeartBeatDate").html(data.data.lastHeartBeat.split(" ")[0] + "<i\n" +
+                        "                            class=\"layui-inline layui-icon layui-icon-flag\"></i>");
+                    $("#lastHeartBeat").html(data.data.lastHeartBeat.split(" ")[1]);
                 }
             });
 
-            //渲染Echarts
-            var memTime = [];
-            var memUsedPercent = [];
-            var swapUsedPercent = [];
-            var echartsRecordsMem = echarts.init(document.getElementById('mem-records'), 'light');
-            var echartsRecordsSwap = echarts.init(document.getElementById('swap-records'), 'light');
-            $.each(memRuntimeData, function (index, mem) {
-                memTime.push(mem.recordTime);
-                memUsedPercent.push(mem.memUsedPercent.toFixed(2));
-                swapUsedPercent.push((mem.swapUsedPercent * 100).toFixed(2));
-            });
-            var memOption =
-                {
-                    tooltip: {
-                        trigger: 'axis',
-                        axisPointer: {
-                            type: 'cross',
-                            label: {
-                                backgroundColor: '#6a7985'
-                            }
-                        }
-                    },
-                    splitLine: {    //网格线
-                        lineStyle: {
-                            type: 'dashed'    //设置网格线类型 dotted：虚线   solid:实线
-                        },
-                        show: true //隐藏或显示
-                    },
-                    toolbox: {
-                        feature: {
-                            saveAsImage: {}
-                        }
-                    },
-                    xAxis: [
-                        {
-                            type: 'category',
-                            boundaryGap: false,
-                            data: memTime
-                        }
-                    ],
-                    grid: {
-                        top: '3%',
-                        left: '1%',
-                        right: '3%',
-                        bottom: '3%',
-                        containLabel: true
-                    },
-                    yAxis: [
-                        {
-                            //设置最大值为100
-                            max: 100,
-                            type: 'value'
-                        }
-                    ],
-                    series: [
-                        {
-                            name: '内存使用率(%)',
-                            type: 'line',
-                            stack: '内存使用率(%)',
-                            areaStyle: {},
-                            data: memUsedPercent
-                        }
-                    ]
-                };
-            var swapOption =
-                {
-                    tooltip: {
-                        trigger: 'axis'
-                    },
-                    calculable: true,
-                    xAxis: [
-                        {
-                            type: 'category',
-                            boundaryGap: false,
-                            data: memTime
-                        }
-                    ],
-                    grid: {
-                        top: '3%',
-                        left: '1%',
-                        right: '3%',
-                        bottom: '3%',
-                        containLabel: true
-                    },
-                    yAxis: [
-                        {
-                            max: 100,
-                            type: 'value'
-                        }
-                    ],
-                    series: [
-                        {
-                            name: '虚拟(swap)内存使用率(%)',
-                            type: 'line',
-                            stack: '虚拟(swap)使用率(%)',
-                            areaStyle: {},
-                            data: swapUsedPercent
-                        }
-                    ]
-                };
-            echartsRecordsMem.setOption(memOption);
-            echartsRecordsSwap.setOption(swapOption);
-            echartsList.push(echartsRecordsMem);
-            echartsList.push(echartsRecordsSwap);
-            /***************************************************************************************************************/
-            /*******************************************************网卡*****************************************************/
-                //服务器网卡数据指标
-            var NetRuntimeData;
-            //网卡渲染
-            var netHtmlStr = "";
-            //默认请求30分钟的数据，可调
-            $.ajax({
-                url: ZUUL_URL + "/ComCenter/CC/server/runtimeNetRecord/" + serverIp + "/" + 30,
-                type: 'GET',
-                async: false,
-                xhrFields: {
-                    withCredentials: true
-                },
-                success: function (data) {
-                    netRuntimeData = data.data;
-                },
-                error: function (e) {
-                    layuimini.msg_error('网络错误');
-                }
-            });
-            //渲染卡片
-            var cardLength = 12 / netRuntimeData.length;
-            if (cardLength < 4) {
-                //卡片长度最少为4
-                cardLength = 4;
-            }
-            $.each(netRuntimeData, function (index, net) {
-                netHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
-                    "            <div class=\"layui-card\">\n" +
-                    "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">网卡运行状况——" + net.netName + "(KB/s)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
-                    "                <div class=\"layui-card-body\">\n" +
-                    "                    <div id=\"net-records-" + net.netName + "\" style=\"width: 100%;min-height:200px\"></div>\n" +
-                    "                </div>\n" +
-                    "            </div>\n" +
-                    "        </div>"
-            });
-            $("#netDataContainer").html(netHtmlStr);
 
-            //渲染Echarts
-
-            $.each(netRuntimeData, function (index, net) {
-                var netTime = [];
-                var netTxRate = [];
-                var netRxRate = [];
-                var echartsRecords = echarts.init(document.getElementById('net-records-' + net.netName), 'light');
-                $.each(net.netRecordDtoList, function (index, netSingle) {
-                    netTime.push(netSingle.recordTime);
-                    netTxRate.push((netSingle.txRate).toFixed(2));
-                    netRxRate.push((netSingle.rxRate).toFixed(2));
-                });
-                var option =
-                    {
-                        tooltip: {
-                            trigger: 'axis'
-                        },
-                        calculable: true,
-                        xAxis: [
-                            {
-                                type: 'category',
-                                boundaryGap: false,
-                                data: netTime
-                            }
-                        ],
-                        grid: {
-                            top: '3%',
-                            left: '1%',
-                            right: '3%',
-                            bottom: '3%',
-                            containLabel: true
-                        },
-                        yAxis: [
-                            {
-                                type: 'value'
-                            }
-                        ],
-                        series: [
-                            {
-                                name: '下载速率(KB/s)',
-                                type: 'line',
-                                stack: '下载速率(KB/s)',
-                                data: netRxRate
-                            }, {
-                                name: '上传速率(KB/s)',
-                                type: 'line',
-                                stack: '上传速率(KB/s)',
-                                data: netTxRate
-                            }
-                        ]
-                    };
-
-                echartsRecords.setOption(option);
-                echartsList.push(echartsRecords);
-            });
-            /***************************************************************************************************************/
-
+            //初始化详细信息
+            echartsList = init(serverIp,null);
             //echarts自适应
             window.onresize = function () {
                 $.each(echartsList, function (index, echartsRecords) {
@@ -630,6 +225,500 @@
             };
             //关闭加载层
             layer.close(load);
+
+            function init(serverIp,intervalTime){
+                var echartsList = [];
+                if(intervalTime===null){
+                    //设置默认显示三十分钟
+                    intervalTime=30;
+                }
+                /*******************************************************CPU*****************************************************/
+                    //服务器cpu数据指标
+                var cpuRuntimeData;
+                //CPU渲染
+                var cpuHtmlStr = "";
+                //默认请求30分钟的数据，可调
+                $.ajax({
+                    url: ZUUL_URL + "/ComCenter/CC/server/runtimeCpuRecord/" + serverIp + "/" + intervalTime,
+                    type: 'GET',
+                    async: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    success: function (data) {
+                        cpuRuntimeData = data.data;
+                    },
+                    error: function (e) {
+                        layuimini.msg_error('网络错误');
+                    }
+                });
+                //渲染卡片
+                var cardLength = 12 / cpuRuntimeData.length;
+                if (cardLength < 3) {
+                    //卡片长度最少为3
+                    cardLength = 3;
+                }
+                $.each(cpuRuntimeData, function (index, cpu) {
+                    cpuHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
+                        "            <div class=\"layui-card\">\n" +
+                        "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">CPU使用率——核心" + cpu.cpuId + "(%)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
+                        "                <div class=\"layui-card-body\">\n" +
+                        "                    <div id=\"cpu-records-" + cpu.cpuId + "\" style=\"width: 100%;min-height:200px\">Cpu波形图</div>\n" +
+                        "                </div>\n" +
+                        "            </div>\n" +
+                        "        </div>"
+                });
+                $("#cpuDataContainer").html(cpuHtmlStr);
+                //渲染Echarts
+
+                $.each(cpuRuntimeData, function (index, cpu) {
+                    var cpuTime = [];
+                    var cpuUserUsed = [];
+                    var cpuSystemUsed = [];
+                    var cpuCombine = [];
+                    var echartsRecords = echarts.init(document.getElementById('cpu-records-' + cpu.cpuId), 'light');
+                    $.each(cpu.cpuRecordDtoList, function (index, cpuCore) {
+                        cpuTime.push(cpuCore.recordTime);
+                        cpuUserUsed.push(cpuCore.userUsed.toFixed(2));
+                        cpuSystemUsed.push(cpuCore.systemUsed.toFixed(2));
+                        cpuCombine.push(cpuCore.combine.toFixed(2));
+                    });
+                    var option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'cross',
+                                label: {
+                                    backgroundColor: '#6a7985'
+                                }
+                            }
+                        },
+                        splitLine: {    //网格线
+                            lineStyle: {
+                                type: 'dashed'    //设置网格线类型 dotted：虚线   solid:实线
+                            },
+                            show: true //隐藏或显示
+                        },
+                        toolbox: {
+                            feature: {
+                                saveAsImage: {}
+                            }
+                        },
+                        grid: {
+                            top: '3%',
+                            left: '1%',
+                            right: '3%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: [
+                            {
+                                type: 'category',
+                                boundaryGap: false,
+                                data: cpuTime
+                            }
+                        ],
+                        yAxis: [
+                            {
+                                max: 100,
+                                type: 'value'
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '总使用率(%)',
+                                type: 'line',
+                                stack: '总使用率',
+                                areaStyle: {},
+                                data: cpuCombine
+                            }, {
+                                name: '用户使用率(%)',
+                                type: 'line',
+                                stack: '用户使用率',
+                                areaStyle: {},
+                                data: cpuUserUsed
+                            }, {
+                                name: '系统使用率(%)',
+                                type: 'line',
+                                stack: '系统使用率',
+                                areaStyle: {},
+                                data: cpuSystemUsed
+                            }
+                        ]
+                    };
+                    echartsRecords.setOption(option);
+                    echartsList.push(echartsRecords);
+                });
+                /***************************************************************************************************************/
+                /*******************************************************硬盘*****************************************************/
+                    //服务器硬盘数据指标
+                var DiskRuntimeData;
+                //硬盘渲染
+                var diskHtmlStr = "";
+                //默认请求30分钟的数据，可调
+                $.ajax({
+                    url: ZUUL_URL + "/ComCenter/CC/server/runtimeDiskRecord/" + serverIp + "/" + intervalTime,
+                    type: 'GET',
+                    async: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    success: function (data) {
+                        diskRuntimeData = data.data;
+                    },
+                    error: function (e) {
+                        layuimini.msg_error('网络错误');
+                    }
+                });
+                //渲染卡片
+                var cardLength = 12 / diskRuntimeData.length;
+                if (cardLength < 4) {
+                    //卡片长度最少为4
+                    cardLength = 4;
+                }
+                $.each(diskRuntimeData, function (index, disk) {
+                    diskHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
+                        "            <div class=\"layui-card\">\n" +
+                        "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">硬盘读写状况——" + disk.diskName + "(Kb/s)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
+                        "                <div class=\"layui-card-body\">\n" +
+                        "                    <div id=\"disk-records-" + disk.diskName + "\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                        "                </div>\n" +
+                        "            </div>\n" +
+                        "        </div>"
+                });
+                $("#diskDataContainer").html(diskHtmlStr);
+
+                //渲染Echarts
+
+                $.each(diskRuntimeData, function (index, disk) {
+                    var diskTime = [];
+                    var diskReadRate = [];
+                    var diskWriteRate = [];
+                    var echartsRecords = echarts.init(document.getElementById('disk-records-' + disk.diskName), 'light');
+                    $.each(disk.diskRecordDtoList, function (index, diskPartition) {
+                        diskTime.push(diskPartition.recordTime);
+                        diskReadRate.push((diskPartition.readRate).toFixed(2));
+                        diskWriteRate.push((diskPartition.writeRate).toFixed(2));
+                    });
+                    var option =
+                        {
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            calculable: true,
+                            xAxis: [
+                                {
+                                    type: 'category',
+                                    boundaryGap: false,
+                                    data: diskTime
+                                }
+                            ],
+                            grid: {
+                                top: '3%',
+                                left: '1%',
+                                right: '3%',
+                                bottom: '3%',
+                                containLabel: true
+                            },
+                            yAxis: [
+                                {
+                                    type: 'value'
+                                }
+                            ],
+                            series: [
+                                {
+                                    name: 'Read(Kb/s)',
+                                    type: 'line',
+                                    stack: 'Read(Kb/s)',
+                                    data: diskReadRate
+                                }, {
+                                    name: 'Write(Kb/s)',
+                                    type: 'line',
+                                    stack: 'Write(Kb/s)',
+                                    data: diskWriteRate
+                                }
+                            ]
+                        };
+
+                    echartsRecords.setOption(option);
+                    echartsList.push(echartsRecords);
+                });
+                /***************************************************************************************************************/
+                /*******************************************************内存*****************************************************/
+                    //服务器内存数据指标
+                var memRuntimeData;
+                //硬盘渲染
+                var memHtmlStr = "<div class=\"layui-col-xs6\">\n" +
+                    "                <!-- 填充内容 -->\n" +
+                    "                <div class=\"layui-card\" >\n" +
+                    "                    <div class=\"layui-card-header\">内存使用状况(%)</div>\n" +
+                    "                    <div class=\"layui-card-body\">\n" +
+                    "                        <div id=\"mem-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                    "                    </div>\n" +
+                    "                </div>\n" +
+                    "            </div>\n" +
+                    "            <div class=\"layui-col-xs6\">\n" +
+                    "                <div class=\"layui-card\">\n" +
+                    "                    <div class=\"layui-card-header\">虚拟(swap)内存使用状况(%)</div>\n" +
+                    "                    <div class=\"layui-card-body\">\n" +
+                    "                        <div id=\"swap-records\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                    "                    </div>\n" +
+                    "                </div>\n" +
+                    "            </div>";
+                $("#memDataContainer").html(memHtmlStr);
+                //默认请求30分钟的数据，可调
+                $.ajax({
+                    url: ZUUL_URL + "/ComCenter/CC/server/runtimeMemRecord/" + serverIp + "/" + intervalTime,
+                    type: 'GET',
+                    async: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    success: function (data) {
+                        memRuntimeData = data.data;
+                        var length = memRuntimeData.length;
+                        var startTime = memRuntimeData[0].recordTime;
+                        var endTime = memRuntimeData[length-1].recordTime;
+                        //使用内存的时间更新时间控件
+                        /*******************************************************日期控件*****************************************************/
+                        laydate.render({
+                            elem: '#startDatetime'
+                            ,type: 'datetime'
+                            ,format:'yyyy-MM-dd HH:mm'
+                            ,value:startTime.substring(0,startTime.lastIndexOf(":"))
+                        });
+                        laydate.render({
+                            elem: '#endDatetime'
+                            ,type: 'datetime'
+                            ,format:'yyyy-MM-dd HH:mm'
+                            ,value:endTime.substring(0,endTime.lastIndexOf(":"))
+                        });
+                        /*******************************************************************************************************************/
+                    },
+                    error: function (e) {
+                        layuimini.msg_error('网络错误');
+                    }
+                });
+
+                //渲染Echarts
+                var memTime = [];
+                var memUsedPercent = [];
+                var swapUsedPercent = [];
+                var echartsRecordsMem = echarts.init(document.getElementById('mem-records'), 'light');
+                var echartsRecordsSwap = echarts.init(document.getElementById('swap-records'), 'light');
+                $.each(memRuntimeData, function (index, mem) {
+                    memTime.push(mem.recordTime);
+                    memUsedPercent.push(mem.memUsedPercent.toFixed(2));
+                    swapUsedPercent.push((mem.swapUsedPercent * 100).toFixed(2));
+                });
+                var memOption =
+                    {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'cross',
+                                label: {
+                                    backgroundColor: '#6a7985'
+                                }
+                            }
+                        },
+                        splitLine: {    //网格线
+                            lineStyle: {
+                                type: 'dashed'    //设置网格线类型 dotted：虚线   solid:实线
+                            },
+                            show: true //隐藏或显示
+                        },
+                        toolbox: {
+                            feature: {
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: [
+                            {
+                                type: 'category',
+                                boundaryGap: false,
+                                data: memTime
+                            }
+                        ],
+                        grid: {
+                            top: '3%',
+                            left: '1%',
+                            right: '3%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        yAxis: [
+                            {
+                                //设置最大值为100
+                                max: 100,
+                                type: 'value'
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '内存使用率(%)',
+                                type: 'line',
+                                stack: '内存使用率(%)',
+                                areaStyle: {},
+                                data: memUsedPercent
+                            }
+                        ]
+                    };
+                var swapOption =
+                    {
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        calculable: true,
+                        xAxis: [
+                            {
+                                type: 'category',
+                                boundaryGap: false,
+                                data: memTime
+                            }
+                        ],
+                        grid: {
+                            top: '3%',
+                            left: '1%',
+                            right: '3%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        yAxis: [
+                            {
+                                max: 100,
+                                type: 'value'
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '虚拟(swap)内存使用率(%)',
+                                type: 'line',
+                                stack: '虚拟(swap)使用率(%)',
+                                areaStyle: {},
+                                data: swapUsedPercent
+                            }
+                        ]
+                    };
+                echartsRecordsMem.setOption(memOption);
+                echartsRecordsSwap.setOption(swapOption);
+                echartsList.push(echartsRecordsMem);
+                echartsList.push(echartsRecordsSwap);
+                /***************************************************************************************************************/
+                /*******************************************************网卡*****************************************************/
+                    //服务器网卡数据指标
+                var NetRuntimeData;
+                //网卡渲染
+                var netHtmlStr = "";
+                //默认请求30分钟的数据，可调
+                $.ajax({
+                    url: ZUUL_URL + "/ComCenter/CC/server/runtimeNetRecord/" + serverIp + "/" + intervalTime,
+                    type: 'GET',
+                    async: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    success: function (data) {
+                        netRuntimeData = data.data;
+                    },
+                    error: function (e) {
+                        layuimini.msg_error('网络错误');
+                    }
+                });
+                //渲染卡片
+                var cardLength = 12 / netRuntimeData.length;
+                if (cardLength < 4) {
+                    //卡片长度最少为4
+                    cardLength = 4;
+                }
+                $.each(netRuntimeData, function (index, net) {
+                    netHtmlStr += "<div class=\"layui-col-xs" + cardLength + "\">\n" +
+                        "            <div class=\"layui-card\">\n" +
+                        "                <div class=\"layui-card-header\"><a href=\"\" style=\"color: blue\">网卡运行状况——" + net.netName + "(KB/s)</a> <span style=\"float: right\">周期:30s</span></div>\n" +
+                        "                <div class=\"layui-card-body\">\n" +
+                        "                    <div id=\"net-records-" + net.netName + "\" style=\"width: 100%;min-height:200px\"></div>\n" +
+                        "                </div>\n" +
+                        "            </div>\n" +
+                        "        </div>"
+                });
+                $("#netDataContainer").html(netHtmlStr);
+
+                //渲染Echarts
+
+                $.each(netRuntimeData, function (index, net) {
+                    var netTime = [];
+                    var netTxRate = [];
+                    var netRxRate = [];
+                    var echartsRecords = echarts.init(document.getElementById('net-records-' + net.netName), 'light');
+                    $.each(net.netRecordDtoList, function (index, netSingle) {
+                        netTime.push(netSingle.recordTime);
+                        netTxRate.push((netSingle.txRate).toFixed(2));
+                        netRxRate.push((netSingle.rxRate).toFixed(2));
+                    });
+                    var option =
+                        {
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            calculable: true,
+                            xAxis: [
+                                {
+                                    type: 'category',
+                                    boundaryGap: false,
+                                    data: netTime
+                                }
+                            ],
+                            grid: {
+                                top: '3%',
+                                left: '1%',
+                                right: '3%',
+                                bottom: '3%',
+                                containLabel: true
+                            },
+                            yAxis: [
+                                {
+                                    type: 'value'
+                                }
+                            ],
+                            series: [
+                                {
+                                    name: '下载速率(KB/s)',
+                                    type: 'line',
+                                    stack: '下载速率(KB/s)',
+                                    data: netRxRate
+                                }, {
+                                    name: '上传速率(KB/s)',
+                                    type: 'line',
+                                    stack: '上传速率(KB/s)',
+                                    data: netTxRate
+                                }
+                            ]
+                        };
+
+                    echartsRecords.setOption(option);
+                    echartsList.push(echartsRecords);
+                });
+                /***************************************************************************************************************/
+                return echartsList;
+            }
+            function getMinutes(startDate,endDate){
+                //将 yyyy-MM-dd HH:mm:ss的时间格式修改为 yyyy-MM-ddTHH:mm:ss，便于构造date对象
+                var date1Str = startDate.replace(" ","T");
+                var date2Str = endDate.replace(" ","T");
+                //构造date对象
+                var date1Obj = new Date(date1Str);
+                var date2Obj = new Date(date2Str);
+
+                var t1 = date1Obj.getTime();//返回从1970-1-1开始计算到Date对象中的时间之间的毫秒数
+                var t2 = date2Obj.getTime();//返回从1970-1-1开始计算到Date对象中的时间之间的毫秒数
+
+                var datetime=1000*60; //一分钟时间的毫秒值
+
+                var minusMinutes= Math.floor(((t2-t1)/datetime));//计算出两个日期天数差
+                //如果结果为负数，取绝对值
+                return Math.abs(minusMinutes);
+
+            }
 
         });
     });

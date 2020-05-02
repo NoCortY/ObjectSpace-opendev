@@ -164,7 +164,7 @@
                         <script type="text/html" id="operate">
                             <!-- 数据表格按钮绑定 -->
                             <a class="layui-btn layui-btn layui-btn-xs" lay-event="serverDetail">配置详情</a>
-                            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="addwhite">重启</a>
+                            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="reboot">重启</a>
                         </script>
                     </div>
                 </div>
@@ -482,50 +482,33 @@
                 '            </fieldset>'
 
                 });
-            }else if(event="addwhite"){
-                var addWhiteBox =layer.open({
-                    title:'加白',
-                    content: '<div class="layui-form layui-form-pane">'+
-                        '<div class="layui-form-item layui-form-text">'+
-                        '<div class="layui-input-block">'+
-                        '<textarea id="addWhiteDesc" placeholder="请输入加白的备注信息" class="layui-textarea"></textarea>'+
-                        '</div>'+
-                        '</div></div>',
-                    area: ['500px', '245px'],
+            }else if(event="reboot"){
+                var rebootLayer =layer.open({
+                    title:'提示',
+                    content: '确定要重启服务器吗？',
                     offset: ['200px'],
                     resize:false,
                     btn: ['确定', '取消'],
                     yes: function(index, layero){
-                        var harassInfo = {};
-                        harassInfo.phoneType = phoneType;
-                        harassInfo.opTime = rowData.opTime;
-                        harassInfo.phoneNumber = rowData.productNo;
-                        harassInfo.provinceId = "531";
-                        harassInfo.cityId = transCity(rowData.cityName);
-                        harassInfo.channelName = rowData.channelName;
-                        harassInfo.addWhiteDesc = $("#addWhiteDesc").val();
-                        var formData = new FormData();
-                        formData.append("harassInfo",JSON.stringify(harassInfo));
+
                         $.ajax({
                             type:'post',
-                            url:'/HarassHandle/addWhite',
-                            data:formData,
-                            processData: false,
-                            contentType: false,
-                            success:function(resData){
-                                if(resData.state=="1004"){
-                                    data.del(); //删除对应行（tr）的DOM结构，并更新缓存
-                                    $(".layui-laypage-btn").click();
-                                    layer.msg(resData.stateInfo);
+                            url:ZUUL_URL+"/ComCenter/CC/server/reboot/"+rowData.serverIp,
+                            success:function(data){
+                                if(data.code==='1001'){
+                                    layer.msg('重启命令发送成功!');
                                 }else{
-                                    layer.msg(resData.stateInfo);
+                                    layer.msg('重启命令发送失败!');
                                 }
+                            },
+                            error:function(){
+                                layer.msg("重启失败，请检查网络");
                             }
                         });
-                        layer.close(stopsubBox);
+                        layer.close(rebootLayer);
                     }
                     ,btn2: function(index, layero){
-                        layer.close(stopsubBox);
+                        layer.close(rebootLayer);
                     }
                 });
             }
